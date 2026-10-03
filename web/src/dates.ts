@@ -71,3 +71,16 @@ export function inputToTime(value: string): number | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(value)
   return m ? Number(m[1]) * 60 + Number(m[2]) : null
 }
+
+/** Понедельник недели, в которую входит день */
+export function weekStart(key: string): string {
+  return addDays(key, -((weekday(key) + 6) % 7))
+}
+
+/** «5 – 11 октября» или «28 сентября – 4 октября» */
+export function formatRange(from: string, to: string): string {
+  const a = fromKey(from)
+  const b = fromKey(to)
+  if (a.getMonth() === b.getMonth()) return `${a.getDate()} – ${formatDay(to)}`
+  return `${formatDay(from)} – ${formatDay(to)}`
+}

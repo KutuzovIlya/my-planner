@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { QuickAdd } from '../components/QuickAdd'
 import { Swipe } from '../components/Swipe'
+import { usePager } from '../components/usePager'
 import { addDays, daysBetween, formatLong, formatTime, todayKey, WEEKDAYS, weekday } from '../dates'
-import { ChevronLeft, ChevronRight, Plus, Repeat } from '../icons'
+import { ChevronLeft, ChevronRight, Search, Plus, Repeat } from '../icons'
 import { categoryLabel, isDoneOn, isOverdue, occursOn, toggleDone, useTasks, type Task, type TaskDraft } from '../store'
 
 const HOUR = 52
@@ -54,15 +55,26 @@ function layout(tasks: Task[]) {
   return out
 }
 
-export function Today({ onEdit, onNew }: {
+export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
+  onSearch: () => void
+  day: string
+  onDayChange: (day: string) => void
   onEdit: (t: Task, day: string) => void
   onNew: (initial: Partial<TaskDraft>) => void
 }) {
   const tasks = useTasks()
   const now = useNow()
   const today = todayKey(now)
-  const [day, setDay] = useState(today)
+  const [slide, setSlide] = useState<'left' | 'right' | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  const setDay = (next: string) => {
+    if (next === day) return
+    setSlide(next > day ? 'left' : 'right')
+    onDayChange(next)
+  }
+
+  const { handlers, pageStyle } = usePager((dir) => setDay(addDays(day, dir)))
 
   const isToday = day === today
   const dayTasks = tasks.filter((t) => occursOn(t, day))
@@ -90,19 +102,20 @@ export function Today({ onEdit, onNew }: {
   }, [day])
 
   return (
-    <>
+    <div className="pager" {...handlers}>
       <header className="header">
         <div className="header-row">
           <div>
             <div className="title">{dayTitle(day, today)}</div>
             <div className="subtitle">
-              {formatLong(day)}
+              <span>{formatLong(day)}</span>
               {!isToday && (
                 <button className="today-pill" onClick={() => setDay(today)}>к сегодня</button>
               )}
             </div>
           </div>
           <div className="day-nav">
+            <button className="icon-btn" onClick={onSearch} aria-label="Найти дело"><Search size={21} /></button>
             <button className="icon-btn" onClick={() => setDay(addDays(day, -1))} aria-label="Предыдущий день"><ChevronLeft /></button>
             <button className="icon-btn" onClick={() => setDay(addDays(day, 1))} aria-label="Следующий день"><ChevronRight /></button>
             <button className="icon-btn" onClick={() => onNew({ date: day })} aria-label="Новое дело"><Plus /></button>
@@ -110,6 +123,11 @@ export function Today({ onEdit, onNew }: {
         </div>
       </header>
 
+      <div
+        key={day}
+        className={'pager-page' + (slide ? ' slide-' + slide : '')}
+        style={pageStyle}
+      >
       <div className="untimed">
         {untimed.length > 0 ? (
           <>
@@ -197,7 +215,9 @@ export function Today({ onEdit, onNew }: {
         </div>
       </div>
 
+      </div>
+
       <QuickAdd defaultDate={day} />
-    </>
+    </div>
   )
 }
