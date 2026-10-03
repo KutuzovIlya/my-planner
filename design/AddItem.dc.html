@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #007AFF; } a:hover { color: #0051D5; }
+  </style>
+</helmet>
+<div style="width: 393px; height: 852px; background: #3A3A3C; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 118px; flex-shrink: 0;"></div>
+
+  <div style="flex-grow: 1; background: #F2F2F7; border-radius: 14px 14px 0 0; display: flex; flex-direction: column; overflow: hidden;">
+
+    <div style="padding: 12px 16px; background: #FFFFFF; border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid #E5E5EA;">
+      <span style="font-size: 17px; color: #007AFF; min-width: 70px;">Отмена</span>
+      <span style="font-size: 17px; font-weight: 600; color: #000000;">Новое дело</span>
+      <span style="font-size: 17px; font-weight: 600; color: #007AFF; min-width: 70px; text-align: right;">Готово</span>
+    </div>
+
+    <div style="padding: 18px 16px; display: flex; flex-direction: column; gap: 20px;">
+
+      <div style="background: #FFFFFF; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-size: 20px; font-weight: 500; color: #000000;">Созвон с командой</span>
+        <div style="height: 0.5px; background: #E5E5EA;"></div>
+        <span style="font-size: 15px; color: #C7C7CC;">Заметка</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-size: 13px; font-weight: 600; color: #8E8E93; padding-left: 4px; letter-spacing: 0.2px;">КАТЕГОРИЯ</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: #007AFF; border-radius: 18px; min-height: 44px; box-sizing: border-box;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF;"></div>
+            <span style="font-size: 15px; color: #FFFFFF;">работа</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: #FFFFFF; border-radius: 18px; min-height: 44px; box-sizing: border-box;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #AF52DE;"></div>
+            <span style="font-size: 15px; color: #000000;">личное</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: #FFFFFF; border-radius: 18px; min-height: 44px; box-sizing: border-box;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #34C759;"></div>
+            <span style="font-size: 15px; color: #000000;">здоровье</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: #FFFFFF; border-radius: 18px; min-height: 44px; box-sizing: border-box;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #FF9500;"></div>
+            <span style="font-size: 15px; color: #000000;">дом</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-size: 13px; font-weight: 600; color: #8E8E93; padding-left: 4px; letter-spacing: 0.2px;">КОГДА</span>
+        <div style="background: #FFFFFF; border-radius: 12px; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; min-height: 44px; box-sizing: border-box;">
+            <span style="font-size: 16px; color: #000000;">Дата</span>
+            <div style="display: flex; align-items: center; gap: 6px; background: #F2F2F7; padding: 6px 11px; border-radius: 8px;">
+              <span style="font-size: 16px; color: #000000;">31 августа</span>
+            </div>
+          </div>
+          <div style="height: 0.5px; background: #E5E5EA; margin-left: 14px;"></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; min-height: 44px; box-sizing: border-box;">
+            <span style="font-size: 16px; color: #000000;">Начало</span>
+            <div style="display: flex; align-items: center; gap: 6px; background: #F2F2F7; padding: 6px 11px; border-radius: 8px;">
+              <span style="font-size: 16px; color: #000000;">9:00</span>
+            </div>
+          </div>
+          <div style="height: 0.5px; background: #E5E5EA; margin-left: 14px;"></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; min-height: 44px; box-sizing: border-box;">
+            <span style="font-size: 16px; color: #000000;">Длительность</span>
+            <div style="display: flex; gap: 6px;">
+              <div style="padding: 6px 11px; background: #F2F2F7; border-radius: 8px;"><span style="font-size: 15px; color: #8E8E93;">30 м</span></div>
+              <div style="padding: 6px 11px; background: #007AFF; border-radius: 8px;"><span style="font-size: 15px; color: #FFFFFF;">1 ч</span></div>
+              <div style="padding: 6px 11px; background: #F2F2F7; border-radius: 8px;"><span style="font-size: 15px; color: #8E8E93;">2 ч</span></div>
+            </div>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #8E8E93; padding-left: 4px;">Без времени дело попадёт в полоску над сеткой дня</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-size: 13px; font-weight: 600; color: #8E8E93; padding-left: 4px; letter-spacing: 0.2px;">ПОВТОР И НАПОМИНАНИЕ</span>
+        <div style="background: #FFFFFF; border-radius: 12px; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; min-height: 44px; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="1.8" stroke-linecap="round"><path d="M4 12V9a3 3 0 0 1 3-3h13"/><path d="m17 3 3 3-3 3"/><path d="M20 12v3a3 3 0 0 1-3 3H4"/><path d="m7 21-3-3 3-3"/></svg>
+              <span style="font-size: 16px; color: #000000;">Повторять</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 16px; color: #8E8E93;">по будням</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+          </div>
+          <div style="height: 0.5px; background: #E5E5EA; margin-left: 44px;"></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; min-height: 44px; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="1.8" stroke-linecap="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.5 21a2 2 0 0 0 3 0"/></svg>
+              <span style="font-size: 16px; color: #000000;">Напомнить</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 16px; color: #8E8E93;">за 5 минут</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+          </div>
+          <div style="height: 0.5px; background: #E5E5EA; margin-left: 44px;"></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; min-height: 44px; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="#8E8E93"/></svg>
+              <span style="font-size: 16px; color: #000000;">Цель</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 16px; color: #C7C7CC;">не выбрана</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

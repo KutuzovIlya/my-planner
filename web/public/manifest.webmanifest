@@ -1,0 +1,9 @@
+{
+  "name": "Планер",
+  "short_name": "Планер",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F2F2F7",
+  "theme_color": "#FFFFFF",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
