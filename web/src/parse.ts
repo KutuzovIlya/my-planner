@@ -56,7 +56,7 @@ function hm(h: string, m?: string): number | null {
 }
 
 export function parseQuick(input: string, today: string): Parsed {
-  let s = ' ' + input + ' '
+  let s = normalizeSpoken(' ' + input + ' ')
   const out: Parsed = { title: '', date: null, start: null, duration: null, category: null, repeat: 'none' }
 
   const take = (re: RegExp, fn: (m: RegExpExecArray) => boolean | void) => {
@@ -105,9 +105,9 @@ export function parseQuick(input: string, today: string): Parsed {
   })
 
   // интервал «с 10 до 12», «10:00–11:30»
-  take(rx('(?:с\\s+(\\d{1,2})(?::(\\d{2}))?|(\\d{1,2}):(\\d{2}))\\s*(?:до|-|–|—)\\s*(\\d{1,2})(?::(\\d{2}))?'), (m) => {
-    const a = m[1] !== undefined ? hm(m[1], m[2]) : hm(m[3], m[4])
-    const b = hm(m[5], m[6])
+  take(rx('(?:с\\s+(\\d{1,2})(?::(\\d{2}))?|(\\d{1,2}):(\\d{2}))\\s*(?:до|-|–|—)\\s*(\\d{1,2})(?::(\\d{2}))?' + DAYPART), (m) => {
+    const a = daypart(m[1] !== undefined ? hm(m[1], m[2]) : hm(m[3], m[4]), m[7])
+    const b = daypart(hm(m[5], m[6]), m[7])
     if (a === null || b === null || b <= a) return false
     out.start = a
     out.duration = b - a
@@ -124,8 +124,8 @@ export function parseQuick(input: string, today: string): Parsed {
 
   // время «в 10», «в 10:30», «10:30»
   if (out.start === null) {
-    take(rx('(?:в\\s+(\\d{1,2})(?::(\\d{2}))?|(\\d{1,2}):(\\d{2}))'), (m) => {
-      const t = m[1] !== undefined ? hm(m[1], m[2]) : hm(m[3], m[4])
+    take(rx('(?:в\\s+(\\d{1,2})(?::(\\d{2}))?|(\\d{1,2}):(\\d{2}))' + DAYPART), (m) => {
+      const t = daypart(m[1] !== undefined ? hm(m[1], m[2]) : hm(m[3], m[4]), m[5])
       if (t === null) return false
       out.start = t
     })
@@ -134,6 +134,37 @@ export function parseQuick(input: string, today: string): Parsed {
   const title = s.replace(/\s+/g, ' ').trim().replace(/^[,.;:–—-]+|[,.;:–—-]+$/g, '').trim()
   out.title = title.charAt(0).toUpperCase() + title.slice(1)
   return out
+}
+
+// «вечера», «дня», «утра», «ночи» после времени
+const DAYPART = '(?:\\s+(утра|дня|вечера|ночи))?'
+
+function daypart(t: number | null, part: string | undefined): number | null {
+  if (t === null || !part) return t
+  const h = Math.floor(t / 60)
+  const p = part.toLowerCase()
+  if (p === 'вечера' && h < 12) return t + 720
+  if (p === 'дня' && h >= 1 && h <= 7) return t + 720
+  if (p === 'ночи' && h === 12) return t - 720
+  return t
+}
+
+const NUMBER_WORDS: Record<string, number> = {
+  один: 1, одну: 1, одна: 1, два: 2, две: 2, три: 3, четыре: 4, пять: 5, шесть: 6,
+  семь: 7, восемь: 8, девять: 9, десять: 10, одиннадцать: 11, двенадцать: 12,
+  пятнадцать: 15, двадцать: 20, тридцать: 30, сорок: 40, 'сорок пять': 45,
+}
+
+/** Разговорные формы из голосового ввода → цифры: «в шесть вечера» → «в 6 вечера» */
+function normalizeSpoken(s: string): string {
+  const words = Object.keys(NUMBER_WORDS).sort((a, b) => b.length - a.length).join('|')
+  return s
+    .replace(new RegExp(B + '(?:в\\s+)?полдень' + E, 'giu'), ' в 12:00 ')
+    .replace(new RegExp(B + '(?:в\\s+)?полночь' + E, 'giu'), ' в 0:00 ')
+    .replace(new RegExp(B + '(?:на\\s+)?полтора\\s+часа' + E, 'giu'), ' 90 мин ')
+    .replace(new RegExp(B + 'на\\s+час' + E, 'giu'), ' на 1 ч ')
+    .replace(new RegExp(B + '(в|с|до)\\s+час' + E, 'giu'), ' $1 1 ')
+    .replace(new RegExp(B + '(в|с|до|на)\\s+(' + words + ')' + E, 'giu'), (_, pre: string, w: string) => ` ${pre} ${NUMBER_WORDS[w.toLowerCase()]} `)
 }
 
 function absoluteDate(day: number, month: number, year: number | null, today: string): string | null {

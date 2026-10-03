@@ -365,3 +365,8 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 }
 .danger-btn { color: var(--red); }
 .plain-btn { color: var(--accent); }
+
+.send-btn.mic { background: var(--fill); color: var(--accent); }
+.send-btn.mic.on { background: var(--red); color: #fff; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--red) 25%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .send-btn.mic.on { animation: none; } }

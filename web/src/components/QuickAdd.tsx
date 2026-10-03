@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { formatDuration, formatRelative, formatTime, todayKey } from '../dates'
-import { ArrowUp, Repeat as RepeatIcon } from '../icons'
+import { ArrowUp, Mic, Repeat as RepeatIcon, Stop } from '../icons'
 import { parseQuick } from '../parse'
+import { speechSupported, useSpeech } from '../speech'
 import { addTask, categoryLabel, REPEATS } from '../store'
 
 const DEFAULT_DURATION = 60
@@ -9,6 +10,7 @@ const DEFAULT_DURATION = 60
 /** Строка быстрого ввода: «Спортзал завтра в 18 1ч #здоровье» */
 export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
   const [text, setText] = useState('')
+  const speech = useSpeech(setText)
   const today = todayKey()
   const parsed = text.trim() ? parseQuick(text, today) : null
 
@@ -44,15 +46,29 @@ export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
       >
         <input
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Новое дело: «Врач завтра в 15 #здоровье»"
+          onChange={(e) => {
+            setText(e.target.value)
+            speech.clearError()
+          }}
+          placeholder={speech.listening ? 'Говори…' : speechSupported ? 'Новое дело — напиши или скажи' : 'Новое дело: «Врач завтра в 15»'}
           enterKeyHint="done"
           aria-label="Быстро добавить дело"
         />
-        <button className="send-btn" type="submit" disabled={!parsed?.title} aria-label="Добавить">
-          <ArrowUp />
-        </button>
+        {speech.listening ? (
+          <button className="send-btn mic on" type="button" onClick={speech.stop} aria-label="Остановить запись">
+            <Stop />
+          </button>
+        ) : speechSupported && !text.trim() ? (
+          <button className="send-btn mic" type="button" onClick={speech.start} aria-label="Сказать голосом">
+            <Mic />
+          </button>
+        ) : (
+          <button className="send-btn" type="submit" disabled={!parsed?.title} aria-label="Добавить">
+            <ArrowUp />
+          </button>
+        )}
       </form>
+      {speech.error && <div className="quick-preview"><span className="tag" style={{ color: 'var(--red)' }}>{speech.error}</span></div>}
       {showPreview && (
         <div className="quick-preview">
           {date && <span className="tag">{formatRelative(date, today)}</span>}

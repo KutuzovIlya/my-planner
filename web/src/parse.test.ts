@@ -42,3 +42,24 @@ describe('parseQuick: еженедельно', () => {
     expect(parseQuick('Отчёт по пятницам в 17', '2026-10-04')).toMatchObject({ title: 'Отчёт', repeat: 'weekly', date: '2026-10-09', start: 1020 })
   })
 })
+
+describe('parseQuick: голосовой ввод', () => {
+  const p = (s: string) => parseQuick(s, '2026-10-04')
+  it('время словами и части дня', () => {
+    expect(p('Спортзал завтра в шесть вечера')).toMatchObject({ title: 'Спортзал', date: '2026-10-05', start: 18 * 60 })
+    expect(p('Врач в 3 дня')).toMatchObject({ title: 'Врач', start: 15 * 60 })
+    expect(p('Пробежка в 7 утра')).toMatchObject({ title: 'Пробежка', start: 7 * 60 })
+    expect(p('Обед в полдень')).toMatchObject({ title: 'Обед', start: 12 * 60 })
+    expect(p('Обед в час дня')).toMatchObject({ title: 'Обед', start: 13 * 60 })
+    expect(p('Кино с 7 до 9 вечера')).toMatchObject({ title: 'Кино', start: 19 * 60, duration: 120 })
+    expect(p('Встреча в 18:00')).toMatchObject({ title: 'Встреча', start: 18 * 60 })
+  })
+  it('длительность словами', () => {
+    expect(p('Уборка на полтора часа')).toMatchObject({ title: 'Уборка', duration: 90 })
+    expect(p('Созвон в 10 на час')).toMatchObject({ title: 'Созвон', start: 600, duration: 60 })
+    expect(p('Медитация на двадцать минут')).toMatchObject({ title: 'Медитация', duration: 20 })
+  })
+  it('не ломает обычные слова', () => {
+    expect(p('Купить два батона')).toMatchObject({ title: 'Купить два батона' })
+  })
+})
