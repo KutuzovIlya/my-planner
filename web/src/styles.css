@@ -527,3 +527,19 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .avatar.small { width: 34px; height: 34px; font-size: 15px; }
 .cat-dots { display: flex; gap: 4px; margin-top: 3px; }
 .cat-dots .dot { width: 9px; height: 9px; }
+
+/* кружок «сделано» на «Сегодня» */
+.done-check {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  border: 1.8px solid var(--c-sub, var(--label-4)); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+/* увеличенная зона нажатия */
+.done-check::after { content: ''; position: absolute; inset: -10px; }
+.done-check.small { width: 15px; height: 15px; border-width: 1.5px; }
+.done-check.on { background: var(--c); border-color: var(--c); }
+.chip.overdue .done-check { border-color: var(--red); }
+.event { justify-content: flex-start; gap: 8px; cursor: pointer; }
+.event.done .done-check { opacity: 1; }
+.chip { cursor: pointer; }

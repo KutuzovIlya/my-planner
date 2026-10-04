@@ -9,3 +9,5 @@
 
 # пароль базы — только локально
 .db-password
+.vapid.json
+.cron-secret

@@ -4,7 +4,7 @@ import { Swipe } from '../components/Swipe'
 import { useLongPressDrag } from '../components/useLongPressDrag'
 import { usePager } from '../components/usePager'
 import { addDays, daysBetween, formatLong, formatTime, todayKey, WEEKDAYS, weekday } from '../dates'
-import { ChevronLeft, ChevronRight, Search, Plus, Repeat } from '../icons'
+import { Check, ChevronLeft, ChevronRight, Search, Plus, Repeat } from '../icons'
 import { catClass, categoryLabel } from '../categories'
 import { usePrefs } from '../prefs'
 import { isDoneOn, isOverdue, occursOn, toggleDone, updateTask, useTasks, type Task, type TaskDraft } from '../store'
@@ -57,6 +57,25 @@ function layout(tasks: Task[]) {
 }
 
 const SNAP = 15
+
+/** Кружок «сделано» на блоке дела: тап отмечает, не открывая дело */
+function DoneCheck({ done, small, onToggle }: { done: boolean; small?: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      className={'done-check' + (done ? ' on' : '') + (small ? ' small' : '')}
+      aria-label={done ? 'Снять отметку' : 'Отметить выполненным'}
+      aria-pressed={done}
+      onClick={(e) => {
+        e.stopPropagation()
+        onToggle()
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      {done && <Check size={small ? 9 : 11} />}
+    </button>
+  )
+}
 
 /** Блок дела на сетке: тап — открыть, свайп вправо — сделано, зажать и тащить — перенести по времени */
 function TimelineEvent({ task: t, day, lane, lanes, y, scrollRef, onEdit }: {
@@ -134,21 +153,25 @@ function TimelineEvent({ task: t, day, lane, lanes, y, scrollRef, onEdit }: {
           zIndex: 1,
         }}
       >
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           className={`event ${catClass(t.category)}` + (short ? ' short' : '') + (done ? ' done' : '')}
           style={{ inset: 0 }}
           onClick={() => onEdit(t, day)}
+          onKeyDown={(e) => e.key === 'Enter' && onEdit(t, day)}
         >
+          <DoneCheck done={done} small={short} onToggle={() => toggleDone(t.id, day)} />
           {short ? (
             <div className="event-title">{t.title} · {formatTime(start)}</div>
           ) : (
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <div className="event-title">{t.title}</div>
               <div className="event-meta">{time} · {categoryLabel(t.category)}</div>
             </div>
           )}
           {t.repeat !== 'none' && !short && <Repeat />}
-        </button>
+        </div>
       </Swipe>
     </div>
   )
@@ -169,13 +192,16 @@ function UntimedChip({ task: t, day, overdue, dragging, onEdit, onDrag }: {
   return (
     <div ref={ref} style={{ maxWidth: '100%', opacity: dragging ? 0.3 : 1 }}>
       <Swipe onSwipe={() => toggleDone(t.id, day)} disabled={dragging} style={{ borderRadius: 16, maxWidth: '100%' }}>
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           className={`chip ${catClass(t.category)}` + (overdue ? ' overdue' : '') + (done ? ' done' : '')}
           onClick={() => onEdit(t, day)}
+          onKeyDown={(e) => e.key === 'Enter' && onEdit(t, day)}
         >
-          <span className="dot" />
+          <DoneCheck done={done} small onToggle={() => toggleDone(t.id, day)} />
           <span>{t.title}</span>
-        </button>
+        </div>
       </Swipe>
     </div>
   )

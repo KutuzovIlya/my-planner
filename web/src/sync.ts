@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, supabaseConfigured } from './supabase'
 import { applyRemoteCategories, DEFAULT_CATEGORIES, getCategories, onCategoriesChange, resetCategories, type CategoryDef } from './categories'
+import { subscribePush, unsubscribePush } from './push'
 import { applyRemotePrefs, getPrefs, onPrefsChange, resetPrefs, type Prefs } from './prefs'
 import { applyRemote, clearLocal, getTasks, onLocalChange, type Change, type Task } from './store'
 
@@ -193,7 +194,9 @@ function onSession(session: Session | null) {
     }
     setSettingsSync({ dirty: false, merge: true })
   }
-  void sync()
+  void sync().then(() => {
+    if (getPrefs().notifications && 'Notification' in window && Notification.permission === 'granted') void subscribePush()
+  })
 }
 
 export function initSync() {
@@ -262,6 +265,7 @@ export async function updatePassword(password: string): Promise<string | null> {
 }
 
 export async function signOut() {
+  await unsubscribePush() // уведомления этого аккаунта на устройство больше не нужны
   try {
     if (st.session) await flush(st.session)
   } catch {

@@ -4,6 +4,7 @@ import { getCategories, useCategories } from '../categories'
 import { timeToInput, inputToTime } from '../dates'
 import { ChevronRight } from '../icons'
 import { getPrefs, REMIND_OPTIONS, setPrefs, usePrefs } from '../prefs'
+import { pushSupported, sendTestPush, subscribePush, unsubscribePush } from '../push'
 import { getTasks, useTasks } from '../store'
 import { supabaseConfigured } from '../supabase'
 import { useSync } from '../sync'
@@ -22,7 +23,7 @@ const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent)
 
 /** Можно ли здесь включить уведомления и что подсказать, если нельзя */
 function notificationSupport(): { ok: boolean; hint?: string } {
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+  if (!pushSupported()) {
     if (isIOS() && !isStandalone()) return { ok: false, hint: 'На iPhone уведомления работают, только если открыть планер с экрана «Домой»: «Поделиться» → «На экран „Домой“»' }
     return { ok: false, hint: 'Этот браузер не поддерживает уведомления' }
   }
@@ -49,14 +50,32 @@ export function Settings({ onAccount }: { onAccount: () => void }) {
   const [notifHint, setNotifHint] = useState<string | null>(null)
   const hours = Array.from({ length: 25 }, (_, i) => i)
 
+  const [testMsg, setTestMsg] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
   const toggleNotifications = async (on: boolean) => {
     setNotifHint(null)
-    if (!on) return setPrefs({ notifications: false })
+    setTestMsg(null)
+    if (!on) {
+      setPrefs({ notifications: false })
+      await unsubscribePush()
+      return
+    }
+    if (!session) return setNotifHint('Для уведомлений нужен аккаунт: сервер отправляет напоминания, даже когда планер закрыт')
     const support = notificationSupport()
     if (!support.ok) return setNotifHint(support.hint ?? null)
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') return setNotifHint('Без разрешения уведомления не придут — разреши их, когда телефон спросит')
+    setBusy(true)
+    const err = await subscribePush()
+    setBusy(false)
+    if (err) return setNotifHint(err)
     setPrefs({ notifications: true })
+  }
+
+  const test = async () => {
+    setTestMsg('Отправляю…')
+    setTestMsg(await sendTestPush())
   }
 
   return (
@@ -90,7 +109,7 @@ export function Settings({ onAccount }: { onAccount: () => void }) {
             <div className="group">
               <div className="form-row">
                 <span>Напоминания о делах</span>
-                <Toggle label="Напоминания о делах" on={prefs.notifications} onChange={(v) => void toggleNotifications(v)} />
+                <Toggle label="Напоминания о делах" on={prefs.notifications} disabled={busy} onChange={(v) => void toggleNotifications(v)} />
               </div>
               <div className="form-row">
                 <span>Напоминать</span>
@@ -127,14 +146,20 @@ export function Settings({ onAccount }: { onAccount: () => void }) {
                 </div>
               )}
             </div>
+            {prefs.notifications && (
+              <div className="group">
+                <button className="row" onClick={() => void test()}>
+                  <span className="row-body">
+                    <span className="row-title" style={{ color: 'var(--accent)' }}>Проверить уведомление</span>
+                    {testMsg && <span className="row-meta">{testMsg}</span>}
+                  </span>
+                </button>
+              </div>
+            )}
             {notifHint ? (
               <div className="hint" style={{ color: 'var(--red)' }}>{notifHint}</div>
             ) : (
-              <div className="hint">
-                {supabaseConfigured
-                  ? 'Время напоминания можно поменять в каждом деле. Утренний план — список дел на день.'
-                  : 'Пуши начнут приходить после подключения сервера — настройки сохранятся.'}
-              </div>
+              <div className="hint">Время напоминания можно поменять в каждом деле. Утренний план — список дел на день.</div>
             )}
           </section>
 
