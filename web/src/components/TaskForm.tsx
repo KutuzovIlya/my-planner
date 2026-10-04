@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { addDays, inputToTime, timeToInput, todayKey } from '../dates'
-import { Calendar, Clock, Repeat as RepeatIcon } from '../icons'
+import { Bell, Calendar, Clock, Repeat as RepeatIcon } from '../icons'
+import { REMIND_OPTIONS, remindLabel, usePrefs } from '../prefs'
 import { addCategory, catClass, useCategories } from '../categories'
 import { addTask, deleteTask, REPEATS, toggleDone, updateTask, type Category, type Repeat, type Task, type TaskDraft } from '../store'
 import { CategoriesSheet, CategoryEditor } from './Categories'
@@ -31,6 +32,8 @@ export function TaskForm({ task, initial, day, onClose }: {
   const [duration, setDuration] = useState(src.duration ?? 60)
   const [repeat, setRepeat] = useState<Repeat>(src.repeat ?? 'none')
   const categories = useCategories()
+  const prefs = usePrefs()
+  const [remind, setRemind] = useState<number | null | undefined>(src.remind)
   const [newCat, setNewCat] = useState(false)
   const [manageCats, setManageCats] = useState(false)
 
@@ -53,6 +56,7 @@ export function TaskForm({ task, initial, day, onClose }: {
       start,
       duration,
       repeat,
+      remind,
     }
     if (task) updateTask(task.id, draft)
     else addTask(draft)
@@ -196,7 +200,7 @@ export function TaskForm({ task, initial, day, onClose }: {
           </div>
 
           <div className="section">
-            <div className="section-title">Повтор</div>
+            <div className="section-title">Повтор и напоминание</div>
             <div className="group">
               <div className="form-row">
                 <span><RepeatIcon size={19} /> Повторять</span>
@@ -206,6 +210,22 @@ export function TaskForm({ task, initial, day, onClose }: {
                   ))}
                 </select>
               </div>
+              {start !== null && (
+                <div className="form-row">
+                  <span><Bell /> Напомнить</span>
+                  <select
+                    className="pill-input"
+                    value={remind === undefined ? 'default' : String(remind)}
+                    onChange={(e) => setRemind(e.target.value === 'default' ? undefined : e.target.value === 'null' ? null : Number(e.target.value))}
+                    aria-label="Напомнить"
+                  >
+                    <option value="default">как обычно ({remindLabel(prefs.defaultRemind)})</option>
+                    {REMIND_OPTIONS.map((o) => (
+                      <option key={String(o.value)} value={String(o.value)}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 

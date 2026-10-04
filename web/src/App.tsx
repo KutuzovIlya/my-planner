@@ -6,6 +6,7 @@ import { AuthScreen } from './components/AuthScreen'
 import { SearchSheet } from './components/SearchSheet'
 import { TaskForm } from './components/TaskForm'
 import { todayKey } from './dates'
+import { Settings } from './screens/Settings'
 import { Tasks } from './screens/Tasks'
 import { Today } from './screens/Today'
 import { Week } from './screens/Week'
@@ -18,7 +19,7 @@ type Sheet = { kind: 'account' } | { kind: 'search' } | { kind: 'new'; initial?:
 
 const tabFromHash = (): Tab => {
   const h = location.hash.slice(1)
-  return h === 'tasks' || h === 'week' ? h : 'today'
+  return h === 'tasks' || h === 'week' || h === 'settings' ? h : 'today'
 }
 
 export function App() {
@@ -77,12 +78,9 @@ export function App() {
         />
       )}
       {tab === 'tasks' && (
-        <Tasks
-          onEdit={(t) => setSheet({ kind: 'edit', id: t.id })}
-          onNew={() => setSheet({ kind: 'new' })}
-          onAccount={supabaseConfigured ? () => setSheet({ kind: 'account' }) : undefined}
-        />
+        <Tasks onEdit={(t) => setSheet({ kind: 'edit', id: t.id })} onNew={() => setSheet({ kind: 'new' })} />
       )}
+      {tab === 'settings' && <Settings onAccount={() => setSheet({ kind: 'account' })} />}
       <TabBar tab={tab} onChange={changeTab} />
 
       {sheet?.kind === 'account' && <AccountSheet onClose={close} />}

@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, supabaseConfigured } from './supabase'
 import { applyRemoteCategories, DEFAULT_CATEGORIES, getCategories, onCategoriesChange, resetCategories, type CategoryDef } from './categories'
+import { applyRemotePrefs, getPrefs, onPrefsChange, resetPrefs, type Prefs } from './prefs'
 import { applyRemote, clearLocal, getTasks, onLocalChange, type Change, type Task } from './store'
 
 // Синхронизация «сначала локально»: дела живут в localStorage и работают без сети,
@@ -87,7 +88,7 @@ async function flushSettings(session: Session) {
   if (!settingsSync.dirty || settingsSync.merge) return
   const { error } = await supabase
     .from('settings')
-    .upsert({ user_id: session.user.id, data: { categories: getCategories() } }, { onConflict: 'user_id' })
+    .upsert({ user_id: session.user.id, data: { categories: getCategories(), prefs: getPrefs() } }, { onConflict: 'user_id' })
   if (error) throw error
   setSettingsSync({ dirty: false })
 }
@@ -95,15 +96,18 @@ async function flushSettings(session: Session) {
 async function pullSettings() {
   const { data, error } = await supabase.from('settings').select('data').maybeSingle()
   if (error) throw error
-  const remote = (data?.data as { categories?: CategoryDef[] } | undefined)?.categories ?? []
+  const remoteData = (data?.data ?? {}) as { categories?: CategoryDef[]; prefs?: Partial<Prefs> }
+  const remote = remoteData.categories ?? []
   if (settingsSync.merge) {
     // первый вход: облачные категории + свои локальные, которых там нет
     const local = getCategories()
     const merged = [...remote, ...local.filter((c) => !remote.some((r) => r.id === c.id))]
     applyRemoteCategories(merged.length ? merged : DEFAULT_CATEGORIES)
-    setSettingsSync({ merge: false, dirty: merged.length !== remote.length })
-  } else if (!settingsSync.dirty && remote.length) {
-    applyRemoteCategories(remote)
+    if (remoteData.prefs) applyRemotePrefs(remoteData.prefs)
+    setSettingsSync({ merge: false, dirty: merged.length !== remote.length || !remoteData.prefs })
+  } else if (!settingsSync.dirty) {
+    if (remote.length) applyRemoteCategories(remote)
+    if (remoteData.prefs) applyRemotePrefs(remoteData.prefs)
   }
 }
 
@@ -183,7 +187,10 @@ function onSession(session: Session | null) {
     write(PENDING_KEY, pending)
     write(SINCE_KEY, null)
     write(OWNER_KEY, JSON.stringify(session.user.id))
-    if (owner) resetCategories()
+    if (owner) {
+      resetCategories()
+      resetPrefs()
+    }
     setSettingsSync({ dirty: false, merge: true })
   }
   void sync()
@@ -192,11 +199,13 @@ function onSession(session: Session | null) {
 export function initSync() {
   if (!supabaseConfigured) return
   onLocalChange(enqueue)
-  onCategoriesChange(() => {
+  const settingsChanged = () => {
     if (!st.session) return
     setSettingsSync({ dirty: true })
     scheduleFlush()
-  })
+  }
+  onCategoriesChange(settingsChanged)
+  onPrefsChange(settingsChanged)
   supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') set({ recovery: true })
     // колбэк не должен ждать запросов к Supabase — откладываем
@@ -267,6 +276,7 @@ export async function signOut() {
   write(SETTINGS_KEY, null)
   settingsSync = { dirty: false, merge: false }
   resetCategories()
+  resetPrefs()
   skipAuth(false)
   set({ session: null, status: 'local', lastSync: null })
 }

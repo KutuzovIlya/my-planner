@@ -6,11 +6,10 @@ import { usePager } from '../components/usePager'
 import { addDays, daysBetween, formatLong, formatTime, todayKey, WEEKDAYS, weekday } from '../dates'
 import { ChevronLeft, ChevronRight, Search, Plus, Repeat } from '../icons'
 import { catClass, categoryLabel } from '../categories'
+import { usePrefs } from '../prefs'
 import { isDoneOn, isOverdue, occursOn, toggleDone, updateTask, useTasks, type Task, type TaskDraft } from '../store'
 
 const HOUR = 52
-const DAY_START = 8
-const DAY_END = 18
 
 function useNow() {
   const [now, setNow] = useState(() => new Date())
@@ -190,6 +189,7 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
   onNew: (initial: Partial<TaskDraft>) => void
 }) {
   const tasks = useTasks()
+  const { dayStart: DAY_START, dayEnd: DAY_END } = usePrefs()
   const now = useNow()
   const today = todayKey(now)
   const [slide, setSlide] = useState<'left' | 'right' | null>(null)

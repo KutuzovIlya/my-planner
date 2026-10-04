@@ -29,6 +29,8 @@ export interface Task {
   /** для повторяющихся — дни, в которые дело сделано */
   doneDates: string[]
   createdAt: number
+  /** напоминание: за сколько минут; null — не напоминать; не задано — как в настройках */
+  remind?: number | null
 }
 
 export type TaskDraft = Omit<Task, 'id' | 'done' | 'doneDates' | 'createdAt'>

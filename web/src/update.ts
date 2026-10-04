@@ -2,7 +2,6 @@
 // с экрана «Домой» может жить в памяти сутками. Проверяем version.json
 // при запуске и при каждом возвращении в приложение.
 
-declare const __BUILD_ID__: string
 
 async function check() {
   try {

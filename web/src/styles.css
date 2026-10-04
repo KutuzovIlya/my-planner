@@ -509,3 +509,21 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .cat-editor-actions { display: flex; justify-content: flex-end; gap: 18px; }
 .cat-editor-actions .link-btn:disabled { color: var(--label-4); }
 .group .cat-editor + .row::before, .group .row + .cat-editor { border-top: 0.5px solid var(--sep); }
+
+/* ——— настройки ——— */
+.toggle {
+  width: 51px; height: 31px; border-radius: 16px; background: var(--fill);
+  position: relative; flex-shrink: 0; transition: background 0.2s;
+  box-shadow: inset 0 0 0 1px var(--sep);
+}
+.toggle span {
+  position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 14px;
+  background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); transition: transform 0.2s;
+}
+.toggle.on { background: var(--green); box-shadow: none; }
+.toggle.on span { transform: translateX(20px); }
+.toggle:disabled { opacity: 0.4; }
+.pill-input:disabled { opacity: 0.4; }
+.avatar.small { width: 34px; height: 34px; font-size: 15px; }
+.cat-dots { display: flex; gap: 4px; margin-top: 3px; }
+.cat-dots .dot { width: 9px; height: 9px; }

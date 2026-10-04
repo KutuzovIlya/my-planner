@@ -6,3 +6,6 @@
 .env.keys
 .env.local
 .env.*.local
+
+# пароль базы — только локально
+.db-password
