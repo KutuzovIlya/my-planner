@@ -64,6 +64,11 @@
 
 html, body, #root { height: 100%; }
 
+/* Страница целиком не прокручивается и не «пружинит» (резинка Safari);
+   прокручиваются только списки внутри (.scroll) */
+html, body { overflow: hidden; overscroll-behavior: none; }
+body { position: fixed; inset: 0; }
+
 body {
   margin: 0;
   font-family: -apple-system, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
@@ -414,3 +419,12 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .subtitle { display: flex; flex-wrap: wrap; align-items: center; row-gap: 4px; }
 .subtitle > span { white-space: nowrap; margin-right: 4px; }
 .subtitle .today-pill { margin-left: 0; }
+
+/* ——— перетаскивание дела ——— */
+.event, .chip { -webkit-touch-callout: none; }
+.drag-lifted { z-index: 5 !important; }
+.drag-lifted .event {
+  transform: scale(1.03);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s, box-shadow 0.15s;
+}

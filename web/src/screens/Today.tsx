@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { QuickAdd } from '../components/QuickAdd'
 import { Swipe } from '../components/Swipe'
+import { useLongPressDrag } from '../components/useLongPressDrag'
 import { usePager } from '../components/usePager'
 import { addDays, daysBetween, formatLong, formatTime, todayKey, WEEKDAYS, weekday } from '../dates'
 import { ChevronLeft, ChevronRight, Search, Plus, Repeat } from '../icons'
-import { categoryLabel, isDoneOn, isOverdue, occursOn, toggleDone, useTasks, type Task, type TaskDraft } from '../store'
+import { categoryLabel, isDoneOn, isOverdue, occursOn, toggleDone, updateTask, useTasks, type Task, type TaskDraft } from '../store'
 
 const HOUR = 52
 const DAY_START = 8
@@ -53,6 +54,103 @@ function layout(tasks: Task[]) {
   }
   flush()
   return out
+}
+
+const SNAP = 15
+
+/** Блок дела на сетке: тап — открыть, свайп вправо — сделано, зажать и тащить — перенести по времени */
+function TimelineEvent({ task: t, day, lane, lanes, y, scrollRef, onEdit }: {
+  task: Task
+  day: string
+  lane: number
+  lanes: number
+  y: (min: number) => number
+  scrollRef: React.RefObject<HTMLDivElement | null>
+  onEdit: (t: Task, day: string) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [shift, setShift] = useState<number | null>(null) // сдвиг в минутах, пока тащим
+  const drag = useRef({ y0: 0, scroll0: 0, clientY: 0, raf: 0 })
+
+  const minutesFor = (clientY: number) => {
+    const el = scrollRef.current
+    const dy = clientY - drag.current.y0 + (el ? el.scrollTop - drag.current.scroll0 : 0)
+    const raw = Math.round((dy / HOUR) * 60 / SNAP) * SNAP
+    return Math.max(-t.start!, Math.min(24 * 60 - t.duration - t.start!, raw))
+  }
+
+  // автопрокрутка, когда тащим дело к краю
+  const autoScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const cy = drag.current.clientY
+    const edge = 48
+    const v = cy < r.top + edge ? -(r.top + edge - cy) / 4 : cy > r.bottom - edge ? (cy - (r.bottom - edge)) / 4 : 0
+    if (v) {
+      el.scrollTop += Math.max(-14, Math.min(14, v))
+      setShift(minutesFor(cy))
+    }
+    drag.current.raf = requestAnimationFrame(autoScroll)
+  }
+
+  useLongPressDrag(ref, {
+    onStart: (clientY) => {
+      drag.current = { y0: clientY, scroll0: scrollRef.current?.scrollTop ?? 0, clientY, raf: 0 }
+      setShift(0)
+      drag.current.raf = requestAnimationFrame(autoScroll)
+    },
+    onMove: (clientY) => {
+      drag.current.clientY = clientY
+      setShift(minutesFor(clientY))
+    },
+    onEnd: (clientY) => {
+      cancelAnimationFrame(drag.current.raf)
+      const delta = clientY === null ? 0 : minutesFor(clientY)
+      if (delta) updateTask(t.id, { start: t.start! + delta })
+      setShift(null)
+    },
+  })
+
+  const start = t.start! + (shift ?? 0)
+  const h = Math.max(22, (t.duration / 60) * HOUR - 4)
+  const short = h < 40
+  const done = isDoneOn(t, day)
+  const time = `${formatTime(start)} – ${formatTime(start + t.duration)}`
+
+  return (
+    <div ref={ref}>
+      <Swipe
+        onSwipe={() => toggleDone(t.id, day)}
+        className={shift !== null ? 'drag-lifted' : ''}
+        style={{
+          position: 'absolute',
+          top: y(start) + 2,
+          height: h,
+          left: `calc(${(lane / lanes) * 100}% + ${lane ? 2 : 0}px)`,
+          width: `calc(${100 / lanes}% - ${lanes > 1 ? 2 : 0}px)`,
+          borderRadius: 8,
+          zIndex: 1,
+        }}
+      >
+        <button
+          className={`event cat-${t.category}` + (short ? ' short' : '') + (done ? ' done' : '')}
+          style={{ inset: 0 }}
+          onClick={() => onEdit(t, day)}
+        >
+          {short ? (
+            <div className="event-title">{t.title} · {formatTime(start)}</div>
+          ) : (
+            <div style={{ minWidth: 0 }}>
+              <div className="event-title">{t.title}</div>
+              <div className="event-meta">{time} · {categoryLabel(t.category)}</div>
+            </div>
+          )}
+          {t.repeat !== 'none' && !short && <Repeat />}
+        </button>
+      </Swipe>
+    </div>
+  )
 }
 
 export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
@@ -172,43 +270,18 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
           ))}
 
           <div style={{ position: 'absolute', left: 56, right: 16, top: 0 }}>
-            {layout(timed).map(({ task: t, lane, lanes }) => {
-              const h = Math.max(22, (t.duration / 60) * HOUR - 4)
-              const short = h < 40
-              const done = isDoneOn(t, day)
-              const time = `${formatTime(t.start!)} – ${formatTime(t.start! + t.duration)}`
-              return (
-                <Swipe
-                  key={t.id}
-                  onSwipe={() => toggleDone(t.id, day)}
-                  style={{
-                    position: 'absolute',
-                    top: y(t.start!) + 2,
-                    height: h,
-                    left: `calc(${(lane / lanes) * 100}% + ${lane ? 2 : 0}px)`,
-                    width: `calc(${100 / lanes}% - ${lanes > 1 ? 2 : 0}px)`,
-                    borderRadius: 8,
-                    zIndex: 1,
-                  }}
-                >
-                  <button
-                    className={`event cat-${t.category}` + (short ? ' short' : '') + (done ? ' done' : '')}
-                    style={{ inset: 0 }}
-                    onClick={() => onEdit(t, day)}
-                  >
-                    {short ? (
-                      <div className="event-title">{t.title} · {formatTime(t.start!)}</div>
-                    ) : (
-                      <div style={{ minWidth: 0 }}>
-                        <div className="event-title">{t.title}</div>
-                        <div className="event-meta">{time} · {categoryLabel(t.category)}</div>
-                      </div>
-                    )}
-                    {t.repeat !== 'none' && !short && <Repeat />}
-                  </button>
-                </Swipe>
-              )
-            })}
+            {layout(timed).map(({ task: t, lane, lanes }) => (
+              <TimelineEvent
+                key={t.id}
+                task={t}
+                day={day}
+                lane={lane}
+                lanes={lanes}
+                y={y}
+                scrollRef={scrollRef}
+                onEdit={onEdit}
+              />
+            ))}
           </div>
 
           {showNow && <div className="now-line" style={{ top: y(nowMin) }} />}
