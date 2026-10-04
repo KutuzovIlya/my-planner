@@ -113,7 +113,10 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .icon-btn:active { background: var(--fill); }
 .icon-btn:disabled { color: var(--label-4); cursor: default; background: none; }
 
-.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+/* Прокрутка — отдельная область для жестов: без pan-y здесь iOS забирает себе и горизонтальные
+   свайпы, и листание дней/недель не получает событий */
+.pager .scroll, .pager-page, .pager .untimed, .pager .header { touch-action: pan-y; }
 
 /* ——— нижняя панель ——— */
 
