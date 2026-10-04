@@ -1,4 +1,5 @@
 import { addDays, daysBetween, toKey, weekday } from './dates'
+import { DEFAULT_CATEGORIES } from './categories'
 import type { Category, Repeat } from './store'
 
 // Разбор строки быстрого ввода:
@@ -18,11 +19,11 @@ const B = '(?<![\\p{L}\\d])'
 const E = '(?![\\p{L}\\d])'
 const rx = (body: string) => new RegExp(B + body + E, 'iu')
 
-const CATEGORY_TAGS: Record<string, Category> = {
-  работа: 'work', работы: 'work', р: 'work',
-  личное: 'personal', л: 'personal',
-  здоровье: 'health', з: 'health',
-  дом: 'home', д: 'home',
+/** #тег → категория: точное совпадение названия (без пробелов) или начало, например «#р» → «работа» */
+function matchCategory(tag: string, categories: { id: string; label: string }[]): string | null {
+  const t = tag.toLowerCase()
+  const norm = (l: string) => l.toLowerCase().replace(/\s+/g, '')
+  return (categories.find((c) => norm(c.label) === t) ?? categories.find((c) => norm(c.label).startsWith(t)))?.id ?? null
 }
 
 const MONTHS: [string, number][] = [
@@ -55,7 +56,7 @@ function hm(h: string, m?: string): number | null {
   return hh * 60 + mm
 }
 
-export function parseQuick(input: string, today: string): Parsed {
+export function parseQuick(input: string, today: string, categories: { id: string; label: string }[] = DEFAULT_CATEGORIES): Parsed {
   let s = normalizeSpoken(' ' + input + ' ')
   const out: Parsed = { title: '', date: null, start: null, duration: null, category: null, repeat: 'none' }
 
@@ -65,8 +66,8 @@ export function parseQuick(input: string, today: string): Parsed {
   }
 
   // категория
-  take(/#([\p{L}]+)/u, (m) => {
-    const c = CATEGORY_TAGS[m[1].toLowerCase()]
+  take(/#([\p{L}\d_-]+)/u, (m) => {
+    const c = matchCategory(m[1], categories)
     if (!c) return false
     out.category = c
   })

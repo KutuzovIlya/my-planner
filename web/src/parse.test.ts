@@ -63,3 +63,12 @@ describe('parseQuick: голосовой ввод', () => {
     expect(p('Купить два батона')).toMatchObject({ title: 'Купить два батона' })
   })
 })
+
+describe('parseQuick: свои категории', () => {
+  const cats = [{ id: 'work', label: 'работа' }, { id: 'c1', label: 'учёба' }, { id: 'c2', label: 'дача и сад' }]
+  it('тег по названию, началу и без пробелов', () => {
+    expect(parseQuick('Лекция в 10 #учёба', '2026-10-04', cats)).toMatchObject({ title: 'Лекция', category: 'c1' })
+    expect(parseQuick('Отчёт #р', '2026-10-04', cats)).toMatchObject({ category: 'work' })
+    expect(parseQuick('Полив #дачаисад', '2026-10-04', cats)).toMatchObject({ title: 'Полив', category: 'c2' })
+  })
+})

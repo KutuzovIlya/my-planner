@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { addDays, inputToTime, timeToInput, todayKey } from '../dates'
 import { Calendar, Clock, Repeat as RepeatIcon } from '../icons'
-import { addTask, CATEGORIES, deleteTask, REPEATS, toggleDone, updateTask, type Category, type Repeat, type Task, type TaskDraft } from '../store'
+import { addCategory, catClass, useCategories } from '../categories'
+import { addTask, deleteTask, REPEATS, toggleDone, updateTask, type Category, type Repeat, type Task, type TaskDraft } from '../store'
+import { CategoriesSheet, CategoryEditor } from './Categories'
 
 const DURATIONS = [15, 30, 60, 90, 120, 180]
 const durLabel = (m: number) => (m < 60 ? `${m} м` : `${m / 60} ч`.replace('.', ','))
@@ -28,6 +30,9 @@ export function TaskForm({ task, initial, day, onClose }: {
   const [start, setStart] = useState<number | null>(src.start ?? null)
   const [duration, setDuration] = useState(src.duration ?? 60)
   const [repeat, setRepeat] = useState<Repeat>(src.repeat ?? 'none')
+  const categories = useCategories()
+  const [newCat, setNewCat] = useState(false)
+  const [manageCats, setManageCats] = useState(false)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -100,13 +105,16 @@ export function TaskForm({ task, initial, day, onClose }: {
           </div>
 
           <div className="section">
-            <div className="section-title">Категория</div>
+            <div className="section-title">
+              <span>Категория</span>
+              <button type="button" className="link-btn" onClick={() => setManageCats(true)}>Изменить</button>
+            </div>
             <div className="cat-chips">
-              {CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <button
                   type="button"
                   key={c.id}
-                  className={`cat-chip cat-${c.id}` + (category === c.id ? ' on' : '')}
+                  className={`cat-chip ${catClass(c.id)}` + (category === c.id ? ' on' : '')}
                   onClick={() => setCategory(c.id)}
                   aria-pressed={category === c.id}
                 >
@@ -114,7 +122,21 @@ export function TaskForm({ task, initial, day, onClose }: {
                   {c.label}
                 </button>
               ))}
+              {!newCat && (
+                <button type="button" className="cat-chip add" onClick={() => setNewCat(true)}>+ своя</button>
+              )}
             </div>
+            {newCat && (
+              <div className="group">
+                <CategoryEditor
+                  onCancel={() => setNewCat(false)}
+                  onSave={(label, color) => {
+                    setCategory(addCategory(label, color).id)
+                    setNewCat(false)
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <div className="section">
@@ -204,6 +226,7 @@ export function TaskForm({ task, initial, day, onClose }: {
           )}
           <button type="submit" hidden />
         </form>
+        {manageCats && <CategoriesSheet onClose={() => setManageCats(false)} />}
       </div>
     </div>
   )

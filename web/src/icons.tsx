@@ -38,3 +38,6 @@ export const Mic = ({ size = 18 }: P) => (
 export const Stop = ({ size = 14 }: P) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3" /></svg>
 )
+export const Person = ({ size = 22 }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+)

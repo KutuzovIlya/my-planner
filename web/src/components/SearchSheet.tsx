@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { addDays, daysBetween, formatLong, formatTime, todayKey } from '../dates'
 import { Repeat, Search } from '../icons'
-import { categoryLabel, isDoneOn, occursOn, REPEATS, type Task, useTasks } from '../store'
+import { catClass, categoryLabel } from '../categories'
+import { isDoneOn, occursOn, REPEATS, type Task, useTasks } from '../store'
 
 /** Ближайший день, когда дело запланировано (для повторяющихся — следующий раз с сегодня) */
 export function nextOccurrence(t: Task, today: string): string | null {
@@ -86,7 +87,7 @@ export function SearchSheet({ onOpenDay, onEdit, onClose }: {
                 return (
                   <button
                     key={t.id}
-                    className={`row cat-${t.category}` + (done ? ' done' : '')}
+                    className={`row ${catClass(t.category)}` + (done ? ' done' : '')}
                     onClick={() => (day ? onOpenDay(day) : onEdit(t))}
                   >
                     <span className="dot" style={{ width: 8, height: 8, marginLeft: 7, marginRight: 7 }} />

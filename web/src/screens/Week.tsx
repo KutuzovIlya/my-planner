@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { usePager } from '../components/usePager'
 import { addDays, formatDuration, formatRange, fromKey, todayKey, WEEKDAYS, weekday, weekStart } from '../dates'
 import { ChevronLeft, ChevronRight, Search } from '../icons'
+import { catClass } from '../categories'
 import { occursOn, useTasks, type Task } from '../store'
 
 /** Сколько минут в дне считаем «полной загрузкой» для полоски */
@@ -78,7 +79,7 @@ export function Week({ day, onOpenDay, onSearch }: { day: string; onOpenDay: (da
                   </div>
                   <div className="week-bar">
                     {segments.map((s, i) => (
-                      <div key={i} className={`cat-${s.category}`} style={{ flexGrow: s.minutes, background: 'var(--c)' }} />
+                      <div key={i} className={`${catClass(s.category)}`} style={{ flexGrow: s.minutes, background: 'var(--c)' }} />
                     ))}
                     {(free > 0 || !segments.length) && <div style={{ flexGrow: free || 1 }} />}
                   </div>

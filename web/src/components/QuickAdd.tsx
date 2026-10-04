@@ -3,7 +3,8 @@ import { formatDuration, formatRelative, formatTime, todayKey } from '../dates'
 import { ArrowUp, Mic, Repeat as RepeatIcon, Stop } from '../icons'
 import { parseQuick } from '../parse'
 import { speechSupported, useSpeech } from '../speech'
-import { addTask, categoryLabel, REPEATS } from '../store'
+import { catClass, categoryLabel, useCategories } from '../categories'
+import { addTask, REPEATS } from '../store'
 
 const DEFAULT_DURATION = 60
 
@@ -12,7 +13,8 @@ export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
   const [text, setText] = useState('')
   const speech = useSpeech(setText)
   const today = todayKey()
-  const parsed = text.trim() ? parseQuick(text, today) : null
+  const categories = useCategories()
+  const parsed = text.trim() ? parseQuick(text, today, categories) : null
 
   // Без явной даты: на экране дня — этот день; с временем или повтором — сегодня; иначе «без срока»
   const date = parsed
@@ -24,7 +26,7 @@ export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
     addTask({
       title: parsed.title,
       note: '',
-      category: parsed.category ?? 'personal',
+      category: parsed.category ?? (categories.some((c) => c.id === 'personal') ? 'personal' : categories[0].id),
       date,
       start: parsed.start,
       duration: parsed.duration ?? DEFAULT_DURATION,
@@ -84,7 +86,7 @@ export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
             </span>
           )}
           {parsed.category && (
-            <span className={`tag cat-${parsed.category}`}>
+            <span className={`tag ${catClass(parsed.category)}`}>
               <span className="dot" /> {categoryLabel(parsed.category)}
             </span>
           )}

@@ -1,17 +1,9 @@
 import { useSyncExternalStore } from 'react'
 import { daysBetween, todayKey, weekday } from './dates'
 
-export type Category = 'work' | 'personal' | 'health' | 'home'
+/** id категории (см. categories.ts) */
+export type Category = string
 export type Repeat = 'none' | 'daily' | 'weekdays' | 'weekly'
-
-export const CATEGORIES: { id: Category; label: string }[] = [
-  { id: 'work', label: 'работа' },
-  { id: 'personal', label: 'личное' },
-  { id: 'health', label: 'здоровье' },
-  { id: 'home', label: 'дом' },
-]
-
-export const categoryLabel = (c: Category) => CATEGORIES.find((x) => x.id === c)!.label
 
 export const REPEATS: { id: Repeat; label: string }[] = [
   { id: 'none', label: 'никогда' },
@@ -82,20 +74,50 @@ export function useTasks(): Task[] {
   return useSyncExternalStore(subscribe, () => state.tasks)
 }
 
+// ——— изменения для синхронизации ———
+export type Change = { type: 'upsert'; task: Task } | { type: 'delete'; id: string }
+let changeListener: ((c: Change) => void) | null = null
+/** Синхронизация подписывается на локальные изменения */
+export function onLocalChange(fn: ((c: Change) => void) | null) {
+  changeListener = fn
+}
+
+export function getTasks(): Task[] {
+  return state.tasks
+}
+
+/** Изменения с сервера: без уведомления синхронизации (иначе отправим их обратно) */
+export function applyRemote(upserts: Task[], deletes: string[]) {
+  if (!upserts.length && !deletes.length) return
+  const byId = new Map(state.tasks.map((t) => [t.id, t]))
+  for (const id of deletes) byId.delete(id)
+  for (const t of upserts) byId.set(t.id, t)
+  setState({ tasks: [...byId.values()] })
+}
+
+/** Выход из аккаунта: дела остаются на сервере, с устройства убираем */
+export function clearLocal() {
+  setState({ tasks: [] })
+}
+
 const newId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
 
 export function addTask(draft: TaskDraft): Task {
   const task: Task = { ...draft, id: newId(), done: false, doneDates: [], createdAt: Date.now() }
   setState({ tasks: [...state.tasks, task] })
+  changeListener?.({ type: 'upsert', task })
   return task
 }
 
 export function updateTask(id: string, patch: Partial<Task>) {
   setState({ tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) })
+  const task = state.tasks.find((t) => t.id === id)
+  if (task) changeListener?.({ type: 'upsert', task })
 }
 
 export function deleteTask(id: string) {
   setState({ tasks: state.tasks.filter((t) => t.id !== id) })
+  changeListener?.({ type: 'delete', id })
 }
 
 /** Отметить/снять «сделано». Для повторяющихся — только в указанный день. */

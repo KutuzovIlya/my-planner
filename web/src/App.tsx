@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
 import { TabBar, type Tab } from './components/TabBar'
+import { AccountSheet } from './components/AccountSheet'
+import { AuthForm } from './components/AuthForm'
+import { AuthScreen } from './components/AuthScreen'
 import { SearchSheet } from './components/SearchSheet'
 import { TaskForm } from './components/TaskForm'
 import { todayKey } from './dates'
 import { Tasks } from './screens/Tasks'
 import { Today } from './screens/Today'
 import { Week } from './screens/Week'
+import { useCategories } from './categories'
 import { useTasks, type TaskDraft } from './store'
+import { supabaseConfigured } from './supabase'
+import { authSkipped, useSync } from './sync'
 
-type Sheet = { kind: 'search' } | { kind: 'new'; initial?: Partial<TaskDraft> } | { kind: 'edit'; id: string; day?: string } | null
+type Sheet = { kind: 'account' } | { kind: 'search' } | { kind: 'new'; initial?: Partial<TaskDraft> } | { kind: 'edit'; id: string; day?: string } | null
 
 const tabFromHash = (): Tab => {
   const h = location.hash.slice(1)
@@ -20,6 +26,9 @@ export function App() {
   const [day, setDay] = useState(todayKey)
   const [sheet, setSheet] = useState<Sheet>(null)
   const tasks = useTasks()
+  const auth = useSync()
+  useCategories() // перерисовать всё при переименовании/перекраске категории
+  const [skipped, setSkipped] = useState(authSkipped)
 
   useEffect(() => {
     const onHash = () => setTab(tabFromHash())
@@ -32,6 +41,15 @@ export function App() {
     if (t === 'today' && tab === 'today') setDay(todayKey())
     setTab(t)
     history.replaceState(null, '', t === 'today' ? location.pathname : '#' + t)
+  }
+
+  if (supabaseConfigured && !auth.ready) return <div className="app" />
+  if (supabaseConfigured && !auth.session && !skipped && !auth.recovery) {
+    return (
+      <div className="app">
+        <AuthScreen onSkip={() => setSkipped(true)} />
+      </div>
+    )
   }
 
   const editing = sheet?.kind === 'edit' ? tasks.find((t) => t.id === sheet.id) : undefined
@@ -58,9 +76,24 @@ export function App() {
           }}
         />
       )}
-      {tab === 'tasks' && <Tasks onEdit={(t) => setSheet({ kind: 'edit', id: t.id })} onNew={() => setSheet({ kind: 'new' })} />}
+      {tab === 'tasks' && (
+        <Tasks
+          onEdit={(t) => setSheet({ kind: 'edit', id: t.id })}
+          onNew={() => setSheet({ kind: 'new' })}
+          onAccount={supabaseConfigured ? () => setSheet({ kind: 'account' }) : undefined}
+        />
+      )}
       <TabBar tab={tab} onChange={changeTab} />
 
+      {sheet?.kind === 'account' && <AccountSheet onClose={close} />}
+      {auth.recovery && (
+        <div className="sheet-scrim">
+          <div className="sheet" role="dialog" aria-modal="true" aria-label="Новый пароль">
+            <div className="sheet-head"><span /><h2>Новый пароль</h2><span /></div>
+            <div className="sheet-body"><AuthForm initialMode="newpass" /></div>
+          </div>
+        </div>
+      )}
       {sheet?.kind === 'search' && (
         <SearchSheet
           onClose={close}

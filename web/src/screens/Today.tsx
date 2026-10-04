@@ -5,7 +5,8 @@ import { useLongPressDrag } from '../components/useLongPressDrag'
 import { usePager } from '../components/usePager'
 import { addDays, daysBetween, formatLong, formatTime, todayKey, WEEKDAYS, weekday } from '../dates'
 import { ChevronLeft, ChevronRight, Search, Plus, Repeat } from '../icons'
-import { categoryLabel, isDoneOn, isOverdue, occursOn, toggleDone, updateTask, useTasks, type Task, type TaskDraft } from '../store'
+import { catClass, categoryLabel } from '../categories'
+import { isDoneOn, isOverdue, occursOn, toggleDone, updateTask, useTasks, type Task, type TaskDraft } from '../store'
 
 const HOUR = 52
 const DAY_START = 8
@@ -135,7 +136,7 @@ function TimelineEvent({ task: t, day, lane, lanes, y, scrollRef, onEdit }: {
         }}
       >
         <button
-          className={`event cat-${t.category}` + (short ? ' short' : '') + (done ? ' done' : '')}
+          className={`event ${catClass(t.category)}` + (short ? ' short' : '') + (done ? ' done' : '')}
           style={{ inset: 0 }}
           onClick={() => onEdit(t, day)}
         >
@@ -170,7 +171,7 @@ function UntimedChip({ task: t, day, overdue, dragging, onEdit, onDrag }: {
     <div ref={ref} style={{ maxWidth: '100%', opacity: dragging ? 0.3 : 1 }}>
       <Swipe onSwipe={() => toggleDone(t.id, day)} disabled={dragging} style={{ borderRadius: 16, maxWidth: '100%' }}>
         <button
-          className={`chip cat-${t.category}` + (overdue ? ' overdue' : '') + (done ? ' done' : '')}
+          className={`chip ${catClass(t.category)}` + (overdue ? ' overdue' : '') + (done ? ' done' : '')}
           onClick={() => onEdit(t, day)}
         >
           <span className="dot" />
@@ -361,7 +362,7 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
           </div>
 
           {chipDrag && chipDrop !== null && (
-            <div className={`event-ghost cat-${chipDrag.task.category}`} style={{ top: y(chipDrop) + 2, height: HOUR - 4 }}>
+            <div className={`event-ghost ${catClass(chipDrag.task.category)}`} style={{ top: y(chipDrop) + 2, height: HOUR - 4 }}>
               {formatTime(chipDrop)} – {formatTime(chipDrop + 60)}
             </div>
           )}
@@ -375,7 +376,7 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
       <QuickAdd defaultDate={day} />
 
       {chipDrag && (
-        <div className={`chip chip-floating cat-${chipDrag.task.category}`} style={{ left: chipDrag.x, top: chipDrag.y }}>
+        <div className={`chip chip-floating ${catClass(chipDrag.task.category)}`} style={{ left: chipDrag.x, top: chipDrag.y }}>
           <span className="dot" />
           <span>{chipDrag.task.title}</span>
         </div>

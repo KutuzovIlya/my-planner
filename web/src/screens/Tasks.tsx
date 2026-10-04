@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { QuickAdd } from '../components/QuickAdd'
 import { daysBetween, formatDay, formatRelative, formatTime, todayKey } from '../dates'
-import { Check, Plus, Repeat, Search } from '../icons'
-import { categoryLabel, isDoneOn, occursOn, REPEATS, toggleDone, useTasks, type Task } from '../store'
+import { Check, Person, Plus, Repeat, Search } from '../icons'
+import { useSync } from '../sync'
+import { catClass, categoryLabel } from '../categories'
+import { isDoneOn, occursOn, REPEATS, toggleDone, useTasks, type Task } from '../store'
 
 type GroupId = 'overdue' | 'today' | 'week' | 'later' | 'nodate' | 'regular' | 'done'
 
@@ -41,7 +43,10 @@ function meta(t: Task, group: GroupId, today: string): string {
 
 const sortKey = (t: Task) => `${t.date ?? '9999'}-${String(t.start ?? 9999).padStart(4, '0')}-${t.createdAt}`
 
-export function Tasks({ onEdit, onNew }: { onEdit: (t: Task) => void; onNew: () => void }) {
+const DOT: Record<string, string> = { synced: 'var(--green)', syncing: 'var(--home)', offline: 'var(--label-4)', error: 'var(--red)' }
+
+export function Tasks({ onEdit, onNew, onAccount }: { onEdit: (t: Task) => void; onNew: () => void; onAccount?: () => void }) {
+  const { session, status } = useSync()
   const tasks = useTasks()
   const today = todayKey()
   const [query, setQuery] = useState('')
@@ -61,7 +66,15 @@ export function Tasks({ onEdit, onNew }: { onEdit: (t: Task) => void; onNew: () 
       <header className="header">
         <div className="header-row">
           <div className="title">Задачи</div>
-          <button className="icon-btn" onClick={onNew} aria-label="Новое дело"><Plus /></button>
+          <div className="day-nav">
+            {onAccount && (
+              <button className="icon-btn" onClick={onAccount} aria-label="Аккаунт">
+                <Person />
+                {session && <span className="sync-dot" style={{ background: DOT[status] ?? 'transparent' }} />}
+              </button>
+            )}
+            <button className="icon-btn" onClick={onNew} aria-label="Новое дело"><Plus /></button>
+          </div>
         </div>
         <label className="search">
           <Search />
@@ -97,7 +110,7 @@ export function Tasks({ onEdit, onNew }: { onEdit: (t: Task) => void; onNew: () 
                         const done = t.repeat === 'none' ? t.done : isDoneOn(t, today)
                         const canCheck = id !== 'regular'
                         return (
-                          <div key={t.id} className={`row cat-${t.category}` + (done ? ' done' : '')}>
+                          <div key={t.id} className={`row ${catClass(t.category)}` + (done ? ' done' : '')}>
                             {canCheck ? (
                               <button
                                 className={'check' + (done ? ' on' : '') + (id === 'overdue' ? ' red' : '')}
