@@ -7,8 +7,10 @@ const THRESHOLD = 70
  * Свайп вправо — «сделано». Обычный клик проходит к содержимому,
  * а клик сразу после свайпа гасится.
  */
-export function Swipe({ onSwipe, children, className = '', style }: {
+export function Swipe({ onSwipe, children, className = '', style, disabled = false }: {
   onSwipe: () => void
+  /** пока дело перетаскивают — свайп выключен */
+  disabled?: boolean
   children: ReactNode
   className?: string
   style?: CSSProperties
@@ -34,6 +36,11 @@ export function Swipe({ onSwipe, children, className = '', style }: {
       onPointerMove={(e) => {
         const s = g.current
         if (!s) return
+        if (disabled) {
+          s.mode = 'v'
+          if (dx) setDx(0)
+          return
+        }
         const mx = e.clientX - s.x
         const my = e.clientY - s.y
         if (!s.mode && Math.hypot(mx, my) > 8) {
@@ -45,7 +52,7 @@ export function Swipe({ onSwipe, children, className = '', style }: {
       onPointerUp={() => {
         const s = g.current
         if (s?.mode) suppressClick.current = true
-        if (s?.mode === 'h' && dx >= THRESHOLD) onSwipe()
+        if (s?.mode === 'h' && dx >= THRESHOLD && !disabled) onSwipe()
         reset()
       }}
       onPointerCancel={reset}

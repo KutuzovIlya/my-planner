@@ -6,11 +6,11 @@ const MOVE_TOLERANCE = 8
 /**
  * Зажал → тащишь по вертикали. Пока тащишь, прокрутка заблокирована
  * (preventDefault на touchmove), без зажатия — обычный скролл.
- * Колбэки получают clientY пальца.
+ * Колбэки получают clientY и clientX пальца.
  */
 export function useLongPressDrag(
   ref: RefObject<HTMLElement | null>,
-  handlers: { onStart: (y: number) => void; onMove: (y: number) => void; onEnd: (y: number | null) => void },
+  handlers: { onStart: (y: number, x: number) => void; onMove: (y: number, x: number) => void; onEnd: (y: number | null, x: number) => void },
 ) {
   const h = useRef(handlers)
   h.current = handlers
@@ -23,28 +23,31 @@ export function useLongPressDrag(
     let x0 = 0
     let y0 = 0
     let lastY = 0
+    let lastX = 0
     let suppressClick = false
 
     const begin = (x: number, y: number) => {
       x0 = x
       y0 = y
       lastY = y
+      lastX = x
       clearTimeout(timer)
       timer = window.setTimeout(() => {
         active = true
         suppressClick = true
         navigator.vibrate?.(10)
-        h.current.onStart(y0)
+        h.current.onStart(y0, x0)
       }, HOLD_MS)
     }
     const move = (x: number, y: number) => {
       lastY = y
-      if (active) h.current.onMove(y)
+      lastX = x
+      if (active) h.current.onMove(y, x)
       else if (Math.hypot(x - x0, y - y0) > MOVE_TOLERANCE) clearTimeout(timer)
     }
     const finish = (cancelled: boolean) => {
       clearTimeout(timer)
-      if (active) h.current.onEnd(cancelled ? null : lastY)
+      if (active) h.current.onEnd(cancelled ? null : lastY, lastX)
       active = false
     }
 

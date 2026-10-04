@@ -122,6 +122,7 @@ function TimelineEvent({ task: t, day, lane, lanes, y, scrollRef, onEdit }: {
     <div ref={ref}>
       <Swipe
         onSwipe={() => toggleDone(t.id, day)}
+        disabled={shift !== null}
         className={shift !== null ? 'drag-lifted' : ''}
         style={{
           position: 'absolute',
@@ -147,6 +148,33 @@ function TimelineEvent({ task: t, day, lane, lanes, y, scrollRef, onEdit }: {
             </div>
           )}
           {t.repeat !== 'none' && !short && <Repeat />}
+        </button>
+      </Swipe>
+    </div>
+  )
+}
+
+/** Чип дела без времени: тап — открыть, свайп — сделано, зажать — перетащить на сетку */
+function UntimedChip({ task: t, day, overdue, dragging, onEdit, onDrag }: {
+  task: Task
+  day: string
+  overdue: boolean
+  dragging: boolean
+  onEdit: (t: Task, day: string) => void
+  onDrag: { onStart: (y: number, x: number) => void; onMove: (y: number, x: number) => void; onEnd: (y: number | null, x: number) => void }
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  useLongPressDrag(ref, onDrag)
+  const done = isDoneOn(t, day)
+  return (
+    <div ref={ref} style={{ maxWidth: '100%', opacity: dragging ? 0.3 : 1 }}>
+      <Swipe onSwipe={() => toggleDone(t.id, day)} disabled={dragging} style={{ borderRadius: 16, maxWidth: '100%' }}>
+        <button
+          className={`chip cat-${t.category}` + (overdue ? ' overdue' : '') + (done ? ' done' : '')}
+          onClick={() => onEdit(t, day)}
+        >
+          <span className="dot" />
+          <span>{t.title}</span>
         </button>
       </Swipe>
     </div>
@@ -186,6 +214,58 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
   const lastHour = Math.min(24, Math.max(DAY_END, ...timed.map((t) => Math.ceil((t.start! + t.duration) / 60))))
   const hours = Array.from({ length: lastHour - firstHour + 1 }, (_, i) => firstHour + i)
   const y = (min: number) => ((min - firstHour * 60) / 60) * HOUR
+
+  // ——— перетаскивание дела «без времени» на сетку ———
+  const timelineRef = useRef<HTMLDivElement>(null)
+  const [chipDrag, setChipDrag] = useState<{ task: Task; x: number; y: number } | null>(null)
+  const chipRaf = useRef(0)
+  const chipPos = useRef({ x: 0, y: 0 })
+
+  /** Время под пальцем (или null, если палец не над сеткой) */
+  const dropMinutes = (clientY: number): number | null => {
+    const sc = scrollRef.current?.getBoundingClientRect()
+    const tl = timelineRef.current?.getBoundingClientRect()
+    if (!sc || !tl || clientY < sc.top || clientY > sc.bottom) return null
+    const raw = firstHour * 60 + ((clientY - tl.top) / HOUR) * 60
+    return Math.max(0, Math.min(23 * 60, Math.round(raw / SNAP) * SNAP))
+  }
+
+  const chipDragHandlers = (t: Task) => ({
+    onStart: (y: number, x: number) => {
+      chipPos.current = { x, y }
+      setChipDrag({ task: t, x, y })
+      // автопрокрутка сетки у краёв
+      const tick = () => {
+        const el = scrollRef.current
+        const cy = chipPos.current.y
+        if (el) {
+          const r = el.getBoundingClientRect()
+          const edge = 48
+          const v = cy > r.bottom - edge && cy < r.bottom + 60 ? (cy - (r.bottom - edge)) / 4 : cy < r.top + edge && cy > r.top ? -(r.top + edge - cy) / 4 : 0
+          if (v) {
+            el.scrollTop += Math.max(-14, Math.min(14, v))
+            setChipDrag((d) => (d ? { ...d } : d))
+          }
+        }
+        chipRaf.current = requestAnimationFrame(tick)
+      }
+      chipRaf.current = requestAnimationFrame(tick)
+    },
+    onMove: (y: number, x: number) => {
+      chipPos.current = { x, y }
+      setChipDrag({ task: t, x, y })
+    },
+    onEnd: (y: number | null) => {
+      cancelAnimationFrame(chipRaf.current)
+      const min = y === null ? null : dropMinutes(y)
+      if (min !== null) {
+        // по умолчанию — час; просроченное дело переезжает на этот день
+        updateTask(t.id, { start: min, duration: 60, ...(t.repeat === 'none' ? { date: day } : {}) })
+      }
+      setChipDrag(null)
+    },
+  })
+  const chipDrop = chipDrag ? dropMinutes(chipDrag.y) : null
 
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const showNow = isToday && nowMin >= firstHour * 60 && nowMin <= lastHour * 60
@@ -231,21 +311,17 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
           <>
             <div className="untimed-label">Без времени · {untimed.length}</div>
             <div className="chips">
-              {untimed.map((t) => {
-                const overdue = isOverdue(t, today)
-                const done = isDoneOn(t, day)
-                return (
-                  <Swipe key={t.id} onSwipe={() => toggleDone(t.id, day)} style={{ borderRadius: 16, maxWidth: '100%' }}>
-                    <button
-                      className={`chip cat-${t.category}` + (overdue ? ' overdue' : '') + (done ? ' done' : '')}
-                      onClick={() => onEdit(t, day)}
-                    >
-                      <span className="dot" />
-                      <span>{t.title}</span>
-                    </button>
-                  </Swipe>
-                )
-              })}
+              {untimed.map((t) => (
+                <UntimedChip
+                  key={t.id}
+                  task={t}
+                  day={day}
+                  overdue={isOverdue(t, today)}
+                  dragging={chipDrag?.task.id === t.id}
+                  onEdit={onEdit}
+                  onDrag={chipDragHandlers(t)}
+                />
+              ))}
             </div>
           </>
         ) : dayTasks.length === 0 ? (
@@ -254,7 +330,7 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
       </div>
 
       <div className="scroll" ref={scrollRef} style={{ background: 'var(--bg)' }}>
-        <div className="timeline">
+        <div className="timeline" ref={timelineRef}>
           {hours.map((h) => (
             <div key={h} className="hour">{h === 24 ? '0:00' : `${h}:00`}</div>
           ))}
@@ -284,6 +360,12 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
             ))}
           </div>
 
+          {chipDrag && chipDrop !== null && (
+            <div className={`event-ghost cat-${chipDrag.task.category}`} style={{ top: y(chipDrop) + 2, height: HOUR - 4 }}>
+              {formatTime(chipDrop)} – {formatTime(chipDrop + 60)}
+            </div>
+          )}
+
           {showNow && <div className="now-line" style={{ top: y(nowMin) }} />}
         </div>
       </div>
@@ -291,6 +373,13 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
       </div>
 
       <QuickAdd defaultDate={day} />
+
+      {chipDrag && (
+        <div className={`chip chip-floating cat-${chipDrag.task.category}`} style={{ left: chipDrag.x, top: chipDrag.y }}>
+          <span className="dot" />
+          <span>{chipDrag.task.title}</span>
+        </div>
+      )}
     </div>
   )
 }
