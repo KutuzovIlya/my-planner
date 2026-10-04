@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E1B4B"/><stop offset="1" stop-color="#070A1F"/></linearGradient>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5AC8FA"/><stop offset="1" stop-color="#0A6CFF"/></linearGradient>
+    <linearGradient id="p" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E08BFF"/><stop offset="1" stop-color="#9B3FE0"/></linearGradient>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7CF29C"/><stop offset="1" stop-color="#1DB954"/></linearGradient>
+    <linearGradient id="o" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD166"/><stop offset="1" stop-color="#FF8A00"/></linearGradient>
+    <radialGradient id="face" cx="0.4" cy="0.3" r="0.8"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DCE1F2"/></radialGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000" flood-opacity="0.5"/></filter>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="rotate(-90 256 256)" fill="none" stroke-width="58">
+    <circle cx="256" cy="256" r="150" stroke="#fff" stroke-opacity="0.07"/>
+    <g filter="url(#glow)">
+      <circle cx="256" cy="256" r="150" stroke="url(#b)" stroke-dasharray="222 1000" stroke-dashoffset="-4"/>
+      <circle cx="256" cy="256" r="150" stroke="url(#p)" stroke-dasharray="147 1000" stroke-dashoffset="-268"/>
+      <circle cx="256" cy="256" r="150" stroke="url(#g)" stroke-dasharray="109 1000" stroke-dashoffset="-454"/>
+      <circle cx="256" cy="256" r="150" stroke="url(#o)" stroke-dasharray="71 1000" stroke-dashoffset="-605"/>
+    </g>
+  </g>
+  <circle cx="256" cy="256" r="96" fill="url(#face)" filter="url(#sh)"/>
+  <path d="M214 258l28 28 56-62" fill="none" stroke="#3B3FD9" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

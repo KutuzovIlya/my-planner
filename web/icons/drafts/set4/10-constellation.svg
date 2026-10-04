@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.45" r="0.8"><stop offset="0" stop-color="#2A1B6B"/><stop offset="1" stop-color="#03030F"/></radialGradient>
+    <filter id="neb" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="40"/></filter>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="6" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <g id="star"><path d="M0 -26 L6 -6 L26 0 L6 6 L0 26 L-6 6 L-26 0 L-6 -6Z" fill="#fff"/><circle r="7" fill="#fff"/></g>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g filter="url(#neb)" opacity="0.7"><ellipse cx="300" cy="230" rx="170" ry="90" fill="#7C3AED" transform="rotate(-35 300 230)"/><ellipse cx="190" cy="320" rx="110" ry="60" fill="#0EA5E9" transform="rotate(30 190 320)"/></g>
+  <g fill="#fff" opacity="0.8"><circle cx="70" cy="90" r="2"/><circle cx="120" cy="190" r="1.5"/><circle cx="420" cy="420" r="2"/><circle cx="460" cy="120" r="1.5"/><circle cx="90" cy="420" r="1.5"/><circle cx="330" cy="440" r="1.5"/><circle cx="250" cy="80" r="1.8"/><circle cx="400" cy="300" r="1.4"/></g>
+  <path d="M150 262L204 316L232 344L286 282L330 232L376 178" fill="none" stroke="#C4B5FD" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" filter="url(#glow)"/>
+  <g filter="url(#glow)" fill="#fff">
+    <circle cx="204" cy="316" r="6"/><circle cx="286" cy="282" r="6"/><circle cx="330" cy="232" r="5"/>
+    <use href="#star" transform="translate(150 262) scale(0.8)"/>
+    <use href="#star" transform="translate(232 344)"/>
+    <use href="#star" transform="translate(376 178) scale(1.2)"/>
+  </g>
+</svg>

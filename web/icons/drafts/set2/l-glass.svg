@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="55"/></filter>
+    <filter id="blur2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="80"/></filter>
+    <clipPath id="card"><rect x="104" y="120" width="304" height="292" rx="64"/></clipPath>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.18"/><stop offset="1" stop-color="#fff" stop-opacity="0.08"/></linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.95"/><stop offset="1" stop-color="#fff" stop-opacity="0.2"/></linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="20" stdDeviation="22" flood-color="#2A0A5E" flood-opacity="0.35"/></filter>
+    <g id="blobs">
+      <rect width="512" height="512" fill="#5B2EFF"/>
+      <circle cx="110" cy="120" r="190" fill="#FF5FA2"/>
+      <circle cx="440" cy="440" r="210" fill="#FFB02E"/>
+      <circle cx="450" cy="80" r="160" fill="#2ED3FF"/>
+      <circle cx="90" cy="460" r="140" fill="#7B3DFF"/>
+    </g>
+  </defs>
+  <g filter="url(#blur)"><use href="#blobs"/></g>
+  <rect x="104" y="120" width="304" height="292" rx="64" fill="#fff" fill-opacity="0.01" filter="url(#sh)"/>
+  <g clip-path="url(#card)">
+    <g filter="url(#blur2)" opacity="0.9"><use href="#blobs"/></g>
+    <rect x="104" y="120" width="304" height="292" fill="url(#sheen)"/>
+  </g>
+  <rect x="105.5" y="121.5" width="301" height="289" rx="62.5" fill="none" stroke="url(#edge)" stroke-width="3"/>
+  <g>
+    <circle cx="164" cy="190" r="24" fill="#fff"/>
+    <path d="m152 191 8 8 16-17" fill="none" stroke="#FF4F8B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="204" y="178" width="150" height="24" rx="12" fill="#fff" opacity="0.92"/>
+    <circle cx="164" cy="266" r="24" fill="#fff"/>
+    <path d="m152 267 8 8 16-17" fill="none" stroke="#7B3DFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="204" y="254" width="110" height="24" rx="12" fill="#fff" opacity="0.92"/>
+    <circle cx="164" cy="342" r="21" fill="none" stroke="#fff" stroke-width="6"/>
+    <rect x="204" y="330" width="170" height="24" rx="12" fill="#fff" opacity="0.55"/>
+  </g>
+</svg>

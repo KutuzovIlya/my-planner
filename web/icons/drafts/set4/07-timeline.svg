@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E4E9FF"/></linearGradient>
+    <radialGradient id="o" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#FFD27A"/><stop offset="1" stop-color="#FF8A00"/></radialGradient>
+    <radialGradient id="b" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#7CC4FF"/><stop offset="1" stop-color="#0A5CFF"/></radialGradient>
+    <radialGradient id="g" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#8CF5A8"/><stop offset="1" stop-color="#16A34A"/></radialGradient>
+    <filter id="sh" x="-40%" y="-40%" width="180%" height="190%"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#2B3A8F" flood-opacity="0.28"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <path d="M168 96V416" stroke="#C5CCEA" stroke-width="8" stroke-linecap="round" stroke-dasharray="1 20"/>
+  <g filter="url(#sh)">
+    <rect x="236" y="116" width="180" height="48" rx="24" fill="#fff"/>
+    <rect x="236" y="232" width="150" height="48" rx="24" fill="#fff"/>
+    <rect x="236" y="348" width="120" height="48" rx="24" fill="#fff"/>
+    <circle cx="168" cy="140" r="48" fill="url(#o)"/>
+    <circle cx="168" cy="256" r="48" fill="url(#b)"/>
+    <circle cx="168" cy="372" r="48" fill="url(#g)"/>
+  </g>
+  <rect x="258" y="134" width="110" height="12" rx="6" fill="#E3E7F5"/>
+  <rect x="258" y="250" width="86" height="12" rx="6" fill="#E3E7F5"/>
+  <rect x="258" y="366" width="60" height="12" rx="6" fill="#E3E7F5"/>
+  <g stroke="#fff" stroke-width="7" stroke-linecap="round"><circle cx="168" cy="140" r="13" fill="#fff"/><path d="M168 108v8M168 164v8M136 140h8M192 140h8M146 118l5 5M185 157l5 5M190 118l-5 5M151 157l-5 5"/></g>
+  <g fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"><rect x="146" y="244" width="44" height="30" rx="6"/><path d="M159 244v-7h18v7"/></g>
+  <path d="M150 373l12 12 24-26" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="152" cy="118" rx="16" ry="9" fill="#fff" opacity="0.4"/><ellipse cx="152" cy="234" rx="16" ry="9" fill="#fff" opacity="0.4"/><ellipse cx="152" cy="350" rx="16" ry="9" fill="#fff" opacity="0.4"/>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.8"><stop offset="0" stop-color="#1D1D2B"/><stop offset="1" stop-color="#040406"/></radialGradient>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#64D2FF"/><stop offset="1" stop-color="#0A6CFF"/></linearGradient>
+    <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF7AD9"/><stop offset="1" stop-color="#9B4DFF"/></linearGradient>
+    <linearGradient id="g3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2BD45E"/><stop offset="1" stop-color="#C6FF5E"/></linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g fill="none" stroke-width="40" stroke-linecap="round" transform="rotate(-90 256 256)">
+    <circle cx="256" cy="256" r="176" stroke="#0A84FF" stroke-opacity="0.16"/>
+    <circle cx="256" cy="256" r="128" stroke="#BF5AF2" stroke-opacity="0.16"/>
+    <circle cx="256" cy="256" r="80" stroke="#30D158" stroke-opacity="0.16"/>
+    <g filter="url(#glow)">
+      <circle cx="256" cy="256" r="176" stroke="url(#g1)" stroke-dasharray="851 1106"/>
+      <circle cx="256" cy="256" r="128" stroke="url(#g2)" stroke-dasharray="563 804"/>
+      <circle cx="256" cy="256" r="80" stroke="url(#g3)" stroke-dasharray="427 503"/>
+    </g>
+  </g>
+  <path d="M228 258l20 20 38-42" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
