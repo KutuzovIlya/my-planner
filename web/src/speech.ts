@@ -86,9 +86,11 @@ export function useSpeech(onText: (text: string) => void, focusInput: () => void
     }
     r.onresult = (e) => {
       heard = true
-      let text = ''
-      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript
-      cb.current.onText(text.trim())
+      // Без continuous распознаётся одна фраза. Safari на iPhone присылает каждый
+      // промежуточный вариант отдельным результатом, и каждый уже содержит предыдущие —
+      // склейка всех давала повторы («Врач Врач завтра…»). Берём последний, самый полный.
+      const last = e.results[e.results.length - 1]
+      cb.current.onText(last[0].transcript.trim())
     }
     r.onerror = (e) => {
       if (e.error === 'aborted' || failed) return
