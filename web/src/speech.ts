@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Голосовой ввод. Два пути:
-//  1) Web Speech API (webkitSpeechRecognition) — в Chrome и Safari;
-//  2) диктовка с клавиатуры (🎤 на клавиатуре iPhone) — запасной путь: в приложении
-//     с экрана «Домой» iOS часто не даёт Web Speech API работать, а диктовка работает всегда.
+// Голосовой ввод: Web Speech API (webkitSpeechRecognition) — в Safari это бесплатное
+// распознавание Apple, в Chrome — Google. Если не работает (ошибка, не запустилось,
+// ничего не услышало) — подсказываем диктовку с клавиатуры и показываем код ошибки.
 
 interface Recognition {
   lang: string
@@ -24,27 +23,24 @@ const Ctor: (new () => Recognition) | undefined =
     : undefined
 
 const isIOS = typeof navigator !== 'undefined' && (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
-const isStandalone =
-  typeof window !== 'undefined' &&
-  (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true)
-
-/** Пользоваться ли распознаванием браузера (иначе — диктовка с клавиатуры) */
-const useWebSpeech = !!Ctor && !(isIOS && isStandalone)
 
 /** Кнопка микрофона есть всегда: либо распознавание браузера, либо подсказка про клавиатуру */
-export const voiceAvailable = useWebSpeech || isIOS || /Android/.test(typeof navigator !== 'undefined' ? navigator.userAgent : '')
+export const voiceAvailable = !!Ctor || isIOS || /Android/.test(typeof navigator !== 'undefined' ? navigator.userAgent : '')
 
 export const KEYBOARD_HINT = 'Нажми 🎤 на клавиатуре и говори — текст появится в строке'
 
 const ERRORS: Record<string, string> = {
-  'not-allowed': 'Нет доступа к микрофону. ',
-  'service-not-allowed': 'Распознавание речи в браузере недоступно. ',
+  'not-allowed': 'Нет доступа к микрофону — разреши его для «Планер» в настройках телефона. ',
+  'service-not-allowed': isIOS
+    ? 'iPhone не дал распознавание речи: проверь, что включены Siri и диктовка («Настройки» → «Основные» → «Клавиатура» → «Диктовка»). '
+    : 'Распознавание речи в браузере недоступно. ',
   'audio-capture': 'Микрофон не найден. ',
   network: 'Нет сети для распознавания. ',
-  'no-speech': 'Ничего не услышал. ',
+  'no-speech': 'Ничего не услышал — говори сразу после нажатия. ',
 }
 
-const START_TIMEOUT = 4000
+// с запасом: при первом запуске iPhone спрашивает разрешение на микрофон
+const START_TIMEOUT = 10000
 
 /**
  * Диктовка: onText получает текст по мере распознавания.
@@ -69,7 +65,7 @@ export function useSpeech(onText: (text: string) => void, focusInput: () => void
   const start = () => {
     if (listening) return
     setHint(null)
-    if (!useWebSpeech || !Ctor) return fallback()
+    if (!Ctor) return fallback()
 
     let started = false
     let heard = false
@@ -98,7 +94,7 @@ export function useSpeech(onText: (text: string) => void, focusInput: () => void
       if (e.error === 'aborted' || failed) return
       failed = true
       clearTimeout(watchdog)
-      fallback(ERRORS[e.error] ?? 'Не удалось распознать речь. ')
+      fallback(ERRORS[e.error] ?? `Не удалось распознать речь (${e.error}). `)
     }
     r.onend = () => {
       clearTimeout(watchdog)
