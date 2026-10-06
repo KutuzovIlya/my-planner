@@ -543,3 +543,6 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .event { justify-content: flex-start; gap: 8px; cursor: pointer; }
 .event.done .done-check { opacity: 1; }
 .chip { cursor: pointer; }
+
+.tag.voice-hint { font-size: 13px; padding: 5px 10px; line-height: 1.35; white-space: normal; }
+.tag.voice-hint.error { color: var(--label); }

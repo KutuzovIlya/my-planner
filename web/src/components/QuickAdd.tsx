@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { formatDuration, formatRelative, formatTime, todayKey } from '../dates'
 import { ArrowUp, Mic, Repeat as RepeatIcon, Stop } from '../icons'
 import { parseQuick } from '../parse'
-import { speechSupported, useSpeech } from '../speech'
+import { useSpeech, voiceAvailable } from '../speech'
 import { catClass, categoryLabel, useCategories } from '../categories'
 import { addTask, REPEATS } from '../store'
 
@@ -11,7 +11,8 @@ const DEFAULT_DURATION = 60
 /** Строка быстрого ввода: «Спортзал завтра в 18 1ч #здоровье» */
 export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
   const [text, setText] = useState('')
-  const speech = useSpeech(setText)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const speech = useSpeech(setText, () => inputRef.current?.focus())
   const today = todayKey()
   const categories = useCategories()
   const parsed = text.trim() ? parseQuick(text, today, categories) : null
@@ -47,12 +48,14 @@ export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
         }}
       >
         <input
+          ref={inputRef}
           value={text}
           onChange={(e) => {
             setText(e.target.value)
-            speech.clearError()
+            speech.clearHint()
           }}
-          placeholder={speech.listening ? 'Говори…' : speechSupported ? 'Новое дело — напиши или скажи' : 'Новое дело: «Врач завтра в 15»'}
+          onBlur={() => speech.clearHint()}
+          placeholder={speech.listening ? 'Говори…' : voiceAvailable ? 'Новое дело — напиши или скажи' : 'Новое дело: «Врач завтра в 15»'}
           enterKeyHint="done"
           aria-label="Быстро добавить дело"
         />
@@ -60,7 +63,7 @@ export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
           <button className="send-btn mic on" type="button" onClick={speech.stop} aria-label="Остановить запись">
             <Stop />
           </button>
-        ) : speechSupported && !text.trim() ? (
+        ) : voiceAvailable && !text.trim() ? (
           <button className="send-btn mic" type="button" onClick={speech.start} aria-label="Сказать голосом">
             <Mic />
           </button>
@@ -70,7 +73,11 @@ export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
           </button>
         )}
       </form>
-      {speech.error && <div className="quick-preview"><span className="tag" style={{ color: 'var(--red)' }}>{speech.error}</span></div>}
+      {speech.hint && (
+        <div className="quick-preview">
+          <span className={'tag voice-hint' + (speech.hint.error ? ' error' : '')}>{speech.hint.text}</span>
+        </div>
+      )}
       {showPreview && (
         <div className="quick-preview">
           {date && <span className="tag">{formatRelative(date, today)}</span>}
