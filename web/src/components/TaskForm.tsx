@@ -31,6 +31,7 @@ export function TaskForm({ task, initial, day, onClose }: {
   const [start, setStart] = useState<number | null>(src.start ?? null)
   const [duration, setDuration] = useState(src.duration ?? 60)
   const [repeat, setRepeat] = useState<Repeat>(src.repeat ?? 'none')
+  const [until, setUntil] = useState<string | null>(src.until ?? null)
   const categories = useCategories()
   const prefs = usePrefs()
   const [remind, setRemind] = useState<number | null | undefined>(src.remind)
@@ -56,6 +57,7 @@ export function TaskForm({ task, initial, day, onClose }: {
       start,
       duration,
       repeat,
+      until: repeat === 'none' ? null : until,
       remind,
     }
     if (task) updateTask(task.id, draft)
@@ -147,7 +149,7 @@ export function TaskForm({ task, initial, day, onClose }: {
             <div className="section-title">Когда</div>
             <div className="group">
               <div className="form-row">
-                <span><Calendar size={19} /> Дата</span>
+                <span><Calendar size={19} /> {repeat !== 'none' ? 'Начиная с' : 'Дата'}</span>
                 <input
                   type="date"
                   className="pill-input"
@@ -210,6 +212,28 @@ export function TaskForm({ task, initial, day, onClose }: {
                   ))}
                 </select>
               </div>
+              {repeat !== 'none' && (
+                <div className="form-row">
+                  <span>До</span>
+                  <div className="pills">
+                    {until !== null ? (
+                      <>
+                        <input
+                          type="date"
+                          className="pill-input"
+                          value={until}
+                          min={date ?? today}
+                          onChange={(e) => setUntil(e.target.value || null)}
+                          aria-label="Последний день"
+                        />
+                        <button type="button" className="pill" onClick={() => setUntil(null)} aria-label="Без конца">✕</button>
+                      </>
+                    ) : (
+                      <button type="button" className="pill" onClick={() => setUntil(addDays(date ?? today, 7))}>без конца</button>
+                    )}
+                  </div>
+                </div>
+              )}
               {start !== null && (
                 <div className="form-row">
                   <span><Bell /> Напомнить</span>

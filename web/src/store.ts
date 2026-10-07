@@ -24,6 +24,8 @@ export interface Task {
   /** минуты */
   duration: number
   repeat: Repeat
+  /** для повторяющихся — последний день периода ('YYYY-MM-DD'); нет — без конца */
+  until?: string | null
   /** для разовых дел */
   done: boolean
   /** для повторяющихся — дни, в которые дело сделано */
@@ -140,6 +142,7 @@ export function occursOn(t: Task, day: string): boolean {
   if (!t.date) return false
   if (t.repeat === 'none') return t.date === day
   if (daysBetween(t.date, day) < 0) return false
+  if (t.until && daysBetween(t.until, day) > 0) return false
   const wd = weekday(day)
   if (t.repeat === 'daily') return true
   if (t.repeat === 'weekdays') return wd >= 1 && wd <= 5
@@ -148,6 +151,11 @@ export function occursOn(t: Task, day: string): boolean {
 
 export function isDoneOn(t: Task, day: string): boolean {
   return t.repeat === 'none' ? t.done : t.doneDates.includes(day)
+}
+
+/** Повторяющееся дело, у которого период уже закончился */
+export function isFinished(t: Task, today = todayKey()): boolean {
+  return t.repeat !== 'none' && !!t.until && daysBetween(t.until, today) > 0
 }
 
 export function isOverdue(t: Task, today = todayKey()): boolean {

@@ -10,7 +10,7 @@ describe('parseQuick', () => {
   })
   it('завтра, время, длительность, категория', () => {
     expect(p('Спортзал завтра в 18 1ч #здоровье')).toEqual({
-      title: 'Спортзал', date: '2026-10-05', start: 18 * 60, duration: 60, category: 'health', repeat: 'none',
+      title: 'Спортзал', date: '2026-10-05', start: 18 * 60, duration: 60, category: 'health', repeat: 'none', until: null,
     })
   })
   it('интервал времени', () => {
@@ -70,5 +70,27 @@ describe('parseQuick: свои категории', () => {
     expect(parseQuick('Лекция в 10 #учёба', '2026-10-04', cats)).toMatchObject({ title: 'Лекция', category: 'c1' })
     expect(parseQuick('Отчёт #р', '2026-10-04', cats)).toMatchObject({ category: 'work' })
     expect(parseQuick('Полив #дачаисад', '2026-10-04', cats)).toMatchObject({ title: 'Полив', category: 'c2' })
+  })
+})
+
+describe('parseQuick: периоды', () => {
+  const p = (s: string) => parseQuick(s, '2026-10-07') // среда
+  it('с … по … — каждый день в эти даты', () => {
+    expect(p('Витамины с 7 по 15 октября')).toMatchObject({ title: 'Витамины', date: '2026-10-07', until: '2026-10-15', repeat: 'daily' })
+    expect(p('Пробежка с сегодня по 15 в 7 утра')).toMatchObject({ title: 'Пробежка', date: '2026-10-07', until: '2026-10-15', repeat: 'daily', start: 420 })
+    expect(p('Отпуск с 28 октября по 5 ноября')).toMatchObject({ date: '2026-10-28', until: '2026-11-05' })
+    expect(p('Сборы с 28 по 5 ноября')).toMatchObject({ date: '2026-10-28', until: '2026-11-05' })
+    expect(p('Курс с 1.10 до 20.10')).toMatchObject({ title: 'Курс', date: '2026-10-01', until: '2026-10-20' })
+  })
+  it('повтор с концом', () => {
+    expect(p('Зарядка каждый день по 15 октября в 7')).toMatchObject({ title: 'Зарядка', repeat: 'daily', until: '2026-10-15', start: 420 })
+    expect(p('Отчёт по будням до 20.10')).toMatchObject({ title: 'Отчёт', repeat: 'weekdays', until: '2026-10-20' })
+    expect(p('Полив каждый день по 3')).toMatchObject({ until: '2026-11-03' })
+  })
+  it('время «с 10 до 12» не путается с датами', () => {
+    expect(p('Созвон с 10 до 12')).toMatchObject({ title: 'Созвон', start: 600, duration: 120, until: null, repeat: 'none' })
+  })
+  it('срок «до 3 ноября»', () => {
+    expect(p('Отчёт до 3 ноября')).toMatchObject({ title: 'Отчёт', date: '2026-11-03', repeat: 'none' })
   })
 })

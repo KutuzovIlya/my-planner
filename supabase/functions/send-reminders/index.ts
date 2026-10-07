@@ -23,6 +23,7 @@ interface Task {
   start: number | null
   duration: number
   repeat: 'none' | 'daily' | 'weekdays' | 'weekly'
+  until?: string | null
   done: boolean
   doneDates: string[]
   remind?: number | null
@@ -50,6 +51,7 @@ function occursOn(t: Task, day: string): boolean {
   if (!t.date) return false
   if (t.repeat === 'none') return t.date === day
   if (dayNum(day) < dayNum(t.date)) return false
+  if (t.until && dayNum(day) > dayNum(t.until)) return false
   const wd = weekday(day)
   if (t.repeat === 'daily') return true
   if (t.repeat === 'weekdays') return wd >= 1 && wd <= 5

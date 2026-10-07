@@ -1,4 +1,4 @@
-import { addDays, daysBetween, toKey, weekday } from './dates'
+import { addDays, daysBetween, fromKey, toKey, weekday } from './dates'
 import { DEFAULT_CATEGORIES } from './categories'
 import type { Category, Repeat } from './store'
 
@@ -12,6 +12,8 @@ export interface Parsed {
   duration: number | null
   category: Category | null
   repeat: Repeat
+  /** конец периода для повторяющихся */
+  until: string | null
 }
 
 // \b не работает с кириллицей — границы слов задаём сами
@@ -58,7 +60,7 @@ function hm(h: string, m?: string): number | null {
 
 export function parseQuick(input: string, today: string, categories: { id: string; label: string }[] = DEFAULT_CATEGORIES): Parsed {
   let s = normalizeSpoken(' ' + input + ' ')
-  const out: Parsed = { title: '', date: null, start: null, duration: null, category: null, repeat: 'none' }
+  const out: Parsed = { title: '', date: null, start: null, duration: null, category: null, repeat: 'none', until: null }
 
   const take = (re: RegExp, fn: (m: RegExpExecArray) => boolean | void) => {
     const m = re.exec(s)
@@ -82,6 +84,36 @@ export function parseQuick(input: string, today: string, categories: { id: strin
       out.date = nextWeekday(today, wd)
     })
   }
+
+  // период «с 7 по 15 октября», «с сегодня по 15», «с 1.10 до 15.10» — каждый день в эти даты
+  take(rx(`с\\s+${DAY}\\s+(?:по|до)\\s+${DAY}`), (m) => {
+    // «с 10 до 12» без месяца — это время, а не даты
+    if (/^\d+$/.test(m[1]) && /^\d+$/.test(m[2]) && !/\sпо\s/i.test(m[0])) return false
+    const end = resolveDay(m[2], today, null, true)
+    if (!end) return false
+    let start = resolveDay(m[1], today, monthOf(m[2]) ?? Number(end.slice(5, 7)) - 1, false)
+    if (!start) return false
+    // «с 28 по 5 ноября» — начало в прошлом месяце
+    if (daysBetween(start, end) < 0) start = shiftMonth(start, -1)
+    if (daysBetween(start, end) < 0) return false
+    out.date = start
+    out.until = end
+    if (out.repeat === 'none') out.repeat = 'daily'
+  })
+  // «каждый день до 15 октября», «по будням по 20.10»
+  if (out.repeat !== 'none' && !out.until) {
+    take(rx(`(?:до|по)\\s+${DAY}`), (m) => {
+      const end = resolveDay(m[1], today, null, true)
+      if (!end) return false
+      out.until = end
+    })
+  }
+  // «Отчёт до 3 ноября» — срок
+  take(rx(`до\\s+(${DATE_WITH_MONTH})`), (m) => {
+    const d = resolveDay(m[1], today, null, true)
+    if (!d) return false
+    out.date = d
+  })
 
   // относительные даты
   take(rx('послезавтра'), () => { out.date = addDays(today, 2) })
@@ -166,6 +198,56 @@ function normalizeSpoken(s: string): string {
     .replace(new RegExp(B + 'на\\s+час' + E, 'giu'), ' на 1 ч ')
     .replace(new RegExp(B + '(в|с|до)\\s+час' + E, 'giu'), ' $1 1 ')
     .replace(new RegExp(B + '(в|с|до|на)\\s+(' + words + ')' + E, 'giu'), (_, pre: string, w: string) => ` ${pre} ${NUMBER_WORDS[w.toLowerCase()]} `)
+}
+
+// ——— даты для периодов ———
+const MONTH_ALT = MONTHS.map(([stem]) => stem).join('|')
+/** «15 октября», «15 окт.», «15.10», «15.10.2026» */
+const DATE_WITH_MONTH = `\\d{1,2}(?:\\s+(?:${MONTH_ALT})[\\p{L}]*\\.?|\\.\\d{1,2}(?:\\.\\d{2,4})?)`
+/** день периода: «сегодня», «завтра», дата с месяцем или просто число */
+const DAY = `(сегодня|завтра|послезавтра|${DATE_WITH_MONTH}|\\d{1,2})`
+
+function monthOf(token: string): number | null {
+  for (const [stem, month] of MONTHS) if (new RegExp(`\\s(?:${stem})`, 'iu').test(' ' + token.replace(/^\d+/, ' '))) return month
+  const dot = /^\d{1,2}\.(\d{1,2})/.exec(token)
+  return dot ? Number(dot[1]) - 1 : null
+}
+
+function shiftMonth(key: string, n: number): string {
+  const d = fromKey(key)
+  d.setMonth(d.getMonth() + n)
+  return toKey(d)
+}
+
+/**
+ * День из токена периода. monthHint — месяц соседней даты («с 7 по 15 октября»).
+ * future — для конца периода: прошедшая дата без года уезжает в следующий год/месяц.
+ */
+function resolveDay(token: string, today: string, monthHint: number | null, future: boolean): string | null {
+  const t = token.toLowerCase().trim()
+  if (t === 'сегодня') return today
+  if (t === 'завтра') return addDays(today, 1)
+  if (t === 'послезавтра') return addDays(today, 2)
+  const ty = Number(today.slice(0, 4))
+  const dot = /^(\d{1,2})\.(\d{1,2})(?:\.(\d{2,4}))?$/.exec(t)
+  if (dot) {
+    const y = dot[3] ? (dot[3].length === 2 ? 2000 + Number(dot[3]) : Number(dot[3])) : null
+    return future ? absoluteDate(Number(dot[1]), Number(dot[2]) - 1, y, today) : exactDate(Number(dot[1]), Number(dot[2]) - 1, y ?? ty)
+  }
+  const day = Number(/^\d{1,2}/.exec(t)?.[0])
+  if (!day) return null
+  const month = monthOf(t) ?? monthHint
+  if (month !== null) return future ? absoluteDate(day, month, null, today) : exactDate(day, month, ty)
+  // просто число: этот месяц, а если день уже прошёл (для конца периода) — следующий
+  const tm = Number(today.slice(5, 7)) - 1
+  const d = exactDate(day, tm, ty)
+  if (d && (!future || daysBetween(today, d) >= 0)) return d
+  return d ? shiftMonth(d, 1) : null
+}
+
+function exactDate(day: number, month: number, year: number): string | null {
+  const d = new Date(year, month, day)
+  return d.getMonth() === month ? toKey(d) : null
 }
 
 function absoluteDate(day: number, month: number, year: number | null, today: string): string | null {

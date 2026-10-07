@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { formatDuration, formatRelative, formatTime, todayKey } from '../dates'
+import { formatDay, formatDuration, formatRelative, formatTime, todayKey } from '../dates'
 import { ArrowUp, Mic, Repeat as RepeatIcon, Stop } from '../icons'
 import { parseQuick } from '../parse'
 import { useSpeech, voiceAvailable } from '../speech'
@@ -32,11 +32,12 @@ export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
       start: parsed.start,
       duration: parsed.duration ?? DEFAULT_DURATION,
       repeat: parsed.repeat,
+      until: parsed.until,
     })
     setText('')
   }
 
-  const showPreview = parsed && (parsed.date || parsed.start !== null || parsed.duration || parsed.category || parsed.repeat !== 'none')
+  const showPreview = parsed && (parsed.until ||parsed.date || parsed.start !== null || parsed.duration || parsed.category || parsed.repeat !== 'none')
 
   return (
     <div className="quick">
@@ -90,6 +91,7 @@ export function QuickAdd({ defaultDate }: { defaultDate?: string }) {
           {parsed.repeat !== 'none' && (
             <span className="tag">
               <RepeatIcon size={11} /> {REPEATS.find((r) => r.id === parsed.repeat)!.label}
+              {parsed.until && ` по ${formatDay(parsed.until)}`}
             </span>
           )}
           {parsed.category && (

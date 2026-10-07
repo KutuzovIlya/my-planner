@@ -3,7 +3,7 @@ import { QuickAdd } from '../components/QuickAdd'
 import { daysBetween, formatDay, formatRelative, formatTime, todayKey } from '../dates'
 import { Check, Plus, Repeat, Search } from '../icons'
 import { catClass, categoryLabel } from '../categories'
-import { isDoneOn, occursOn, REPEATS, toggleDone, useTasks, type Task } from '../store'
+import { isDoneOn, isFinished, occursOn, REPEATS, toggleDone, useTasks, type Task } from '../store'
 
 type GroupId = 'overdue' | 'today' | 'week' | 'later' | 'nodate' | 'regular' | 'done'
 
@@ -18,7 +18,7 @@ const GROUPS: { id: GroupId; label: string }[] = [
 ]
 
 function groupOf(t: Task, today: string): GroupId {
-  if (t.repeat !== 'none') return occursOn(t, today) ? 'today' : 'regular'
+  if (t.repeat !== 'none') return isFinished(t, today) ? 'done' : occursOn(t, today) ? 'today' : 'regular'
   if (t.done) return 'done'
   if (!t.date) return 'nodate'
   const diff = daysBetween(today, t.date)
@@ -30,7 +30,7 @@ function groupOf(t: Task, today: string): GroupId {
 function meta(t: Task, group: GroupId, today: string): string {
   const parts: string[] = []
   if (t.repeat !== 'none') {
-    parts.push(REPEATS.find((r) => r.id === t.repeat)!.label)
+    parts.push(REPEATS.find((r) => r.id === t.repeat)!.label + (t.until ? ` по ${formatDay(t.until)}` : ''))
   } else if (t.date && group !== 'today') {
     parts.push(group === 'overdue' ? formatDay(t.date) : formatRelative(t.date, today))
   }
@@ -95,8 +95,8 @@ export function Tasks({ onEdit, onNew }: { onEdit: (t: Task) => void; onNew: () 
                   {!collapsed && (
                     <div className="group">
                       {items.map((t) => {
-                        const done = t.repeat === 'none' ? t.done : isDoneOn(t, today)
-                        const canCheck = id !== 'regular'
+                        const done = t.repeat === 'none' ? t.done : isDoneOn(t, today) || isFinished(t, today)
+                        const canCheck = id !== 'regular' && !(t.repeat !== 'none' && id === 'done')
                         return (
                           <div key={t.id} className={`row ${catClass(t.category)}` + (done ? ' done' : '')}>
                             {canCheck ? (

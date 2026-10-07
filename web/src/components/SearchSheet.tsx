@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { addDays, daysBetween, formatLong, formatTime, todayKey } from '../dates'
+import { addDays, daysBetween, formatDay, formatLong, formatTime, todayKey } from '../dates'
 import { Repeat, Search } from '../icons'
 import { catClass, categoryLabel } from '../categories'
 import { isDoneOn, occursOn, REPEATS, type Task, useTasks } from '../store'
@@ -13,7 +13,8 @@ export function nextOccurrence(t: Task, today: string): string | null {
     const d = addDays(from, i)
     if (occursOn(t, d)) return d
   }
-  return t.date
+  // период закончился — показываем его последний день
+  return t.until ?? t.date
 }
 
 /** Поиск дела по названию → переход к его дню */
@@ -80,7 +81,7 @@ export function SearchSheet({ onOpenDay, onEdit, onClose }: {
                   ? (t.repeat !== 'none' ? 'ближайший раз: ' : '') + formatLong(day)
                   : 'без даты'
                 const meta = [
-                  t.repeat !== 'none' ? REPEATS.find((r) => r.id === t.repeat)!.label : null,
+                  t.repeat !== 'none' ? REPEATS.find((r) => r.id === t.repeat)!.label + (t.until ? ` по ${formatDay(t.until)}` : '') : null,
                   t.start !== null ? formatTime(t.start) : null,
                   categoryLabel(t.category),
                 ].filter(Boolean).join(' · ')
