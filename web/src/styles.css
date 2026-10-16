@@ -546,3 +546,40 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 
 .tag.voice-hint { font-size: 13px; padding: 5px 10px; line-height: 1.35; white-space: normal; }
 .tag.voice-hint.error { color: var(--label); }
+
+/* ——— «Деньги» ——— */
+.money-filter { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 0 16px; scrollbar-width: none; }
+.money-filter::-webkit-scrollbar { display: none; }
+.money-filter .pill { white-space: nowrap; display: flex; align-items: center; gap: 6px; background: var(--card); color: var(--label-2); flex-shrink: 0; }
+.money-filter .pill.on { background: var(--accent); color: #fff; }
+.money-filter .pill.on .dot { background: #fff; }
+
+.money-total { background: var(--card); border-radius: 12px; padding: 6px 6px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.money-period { display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 15px; font-weight: 600; color: var(--label-2); min-height: 44px; }
+.money-period > span { padding: 0 4px; }
+.money-sum { font-size: 34px; font-weight: 700; letter-spacing: -0.4px; font-variant-numeric: tabular-nums; }
+.money-sub { font-size: 13px; color: var(--label-3); padding: 0 10px; }
+.money-cmp { font-size: 13px; font-weight: 600; padding: 3px 9px; border-radius: 10px; margin-top: 4px; background: var(--fill); color: var(--label-2); }
+
+.money-chart { padding: 12px 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+.money-chart-head { font-size: 14px; color: var(--label-3); padding: 0 4px; min-height: 20px; }
+.money-chart-head b { color: var(--label); font-weight: 600; font-variant-numeric: tabular-nums; }
+.money-bars { display: flex; align-items: stretch; height: 140px; border-bottom: 0.5px solid var(--sep); }
+.money-bar { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 2px; }
+.money-bar-track { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.money-bar-fill { width: 100%; max-width: 22px; border-radius: 4px 4px 0 0; background: color-mix(in srgb, var(--accent) 35%, transparent); transition: background 0.15s; }
+.money-bar.current .money-bar-fill, .money-bar.active .money-bar-fill { background: var(--accent); }
+.money-bar-label { font-size: 10px; color: var(--label-3); padding-bottom: 4px; white-space: nowrap; }
+.money-bar.current .money-bar-label { color: var(--accent); font-weight: 600; }
+
+.money-source { padding-left: 14px; }
+.row.money-source + .row::before, .row.money-source::before { left: 14px; }
+.money-source-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.money-source-sum, .money-amount { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.money-source-bar { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; margin: 3px 0 1px; }
+.money-source-bar span { display: block; height: 100%; border-radius: 3px; background: var(--c); }
+.tabbar .tab span { white-space: nowrap; }
+.amount-input { display: flex; align-items: baseline; gap: 6px; font-size: 34px; font-weight: 700; }
+.amount-input input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; letter-spacing: -0.4px; }
+.amount-input input::placeholder { color: var(--label-4); }
+.amount-input span { color: var(--label-3); }

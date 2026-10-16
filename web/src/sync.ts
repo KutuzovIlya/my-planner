@@ -4,7 +4,8 @@ import { supabase, supabaseConfigured } from './supabase'
 import { applyRemoteCategories, DEFAULT_CATEGORIES, getCategories, onCategoriesChange, resetCategories, type CategoryDef } from './categories'
 import { subscribePush, unsubscribePush } from './push'
 import { applyRemotePrefs, getPrefs, onPrefsChange, resetPrefs, type Prefs } from './prefs'
-import { applyRemote, clearLocal, getTasks, onLocalChange, type Change, type Task } from './store'
+import { applyRemote, clearLocal, getTasks, onLocalChange, type Task } from './store'
+import { applyRemoteIncome, clearLocalIncome, getIncome, onIncomeChange, type Income } from './money'
 
 // Синхронизация «сначала локально»: дела живут в localStorage и работают без сети,
 // изменения копятся в очереди и уходят на сервер; с сервера забираем только изменившееся.
@@ -21,13 +22,9 @@ interface SyncState {
   recovery: boolean
 }
 
-const PENDING_KEY = 'planner.pending'
-const SINCE_KEY = 'planner.since'
 const OWNER_KEY = 'planner.owner'
 const SKIP_KEY = 'planner.skip-auth'
 const SETTINGS_KEY = 'planner.settings-sync'
-
-type Pending = Record<string, { deleted: boolean; task?: Task }>
 
 const read = <T,>(key: string, fallback: T): T => {
   try {
@@ -46,7 +43,80 @@ const write = (key: string, value: unknown) => {
   }
 }
 
-let pending: Pending = read(PENDING_KEY, {})
+// ——— коллекции: дела и заработок; у каждой своя таблица и своя очередь изменений ———
+
+type Pending<T> = Record<string, { deleted: boolean; item?: T }>
+
+function collection<T extends { id: string }>(
+  table: string,
+  pendingKey: string,
+  sinceKey: string,
+  getAll: () => T[],
+  apply: (upserts: T[], deletes: string[]) => void,
+  clear: () => void,
+) {
+  // старый формат очереди дел: { deleted, task }
+  const raw = read<Record<string, { deleted: boolean; item?: T; task?: T }>>(pendingKey, {})
+  let pending: Pending<T> = Object.fromEntries(Object.entries(raw).map(([id, p]) => [id, { deleted: p.deleted, item: p.item ?? p.task }]))
+
+  const save = () => write(pendingKey, pending)
+  return {
+    count: () => Object.keys(pending).length,
+    enqueue(id: string, item: T | null) {
+      if (!st.session) return
+      pending = { ...pending, [id]: item ? { deleted: false, item } : { deleted: true } }
+      save()
+      scheduleFlush()
+    },
+    async flush(session: Session) {
+      const entries = Object.entries(pending)
+      if (!entries.length) return
+      const rows = entries.map(([id, p]) => ({ user_id: session.user.id, id, data: p.item ?? {}, deleted: p.deleted }))
+      const { error } = await supabase.from(table).upsert(rows, { onConflict: 'user_id,id' })
+      if (error) throw error
+      // убираем из очереди только то, что не менялось, пока шёл запрос
+      const next = { ...pending }
+      for (const [id, p] of entries) if (next[id] === p) delete next[id]
+      pending = next
+      save()
+    },
+    async pull() {
+      let since = read<string | null>(sinceKey, null)
+      for (;;) {
+        let q = supabase.from(table).select('id, data, deleted, updated_at').order('updated_at').limit(500)
+        if (since) q = q.gt('updated_at', since)
+        const { data, error } = await q
+        if (error) throw error
+        if (!data.length) break
+        const fresh = data.filter((r) => !pending[r.id]) // локальные неотправленные правки важнее
+        apply(
+          fresh.filter((r) => !r.deleted).map((r) => r.data as T),
+          fresh.filter((r) => r.deleted).map((r) => r.id),
+        )
+        since = data[data.length - 1].updated_at
+        write(sinceKey, JSON.stringify(since))
+        if (data.length < 500) break
+      }
+    },
+    /** первый вход: созданное без аккаунта переезжает в аккаунт */
+    adoptLocal() {
+      for (const item of getAll()) pending[item.id] = { deleted: false, item }
+      save()
+      write(sinceKey, null)
+    },
+    reset() {
+      clear()
+      pending = {}
+      write(pendingKey, null)
+      write(sinceKey, null)
+    },
+  }
+}
+
+const tasksSync = collection<Task>('tasks', 'planner.pending', 'planner.since', getTasks, applyRemote, clearLocal)
+const incomeSync = collection<Income>('income', 'planner.pending-income', 'planner.since-income', getIncome, applyRemoteIncome, clearLocalIncome)
+const collections = [tasksSync, incomeSync]
+
 // категории: dirty — есть неотправленные правки; merge — первый вход, объединить с облаком
 let settingsSync: { dirty: boolean; merge: boolean } = read(SETTINGS_KEY, { dirty: false, merge: false })
 const setSettingsSync = (patch: Partial<typeof settingsSync>) => {
@@ -68,15 +138,6 @@ export function useSync(): SyncState {
     },
     () => st,
   )
-}
-
-// ——— очередь изменений ———
-
-function enqueue(c: Change) {
-  if (!st.session) return
-  pending = { ...pending, [c.type === 'upsert' ? c.task.id : c.id]: c.type === 'upsert' ? { deleted: false, task: c.task } : { deleted: true } }
-  write(PENDING_KEY, pending)
-  scheduleFlush()
 }
 
 let flushTimer = 0
@@ -114,35 +175,7 @@ async function pullSettings() {
 
 async function flush(session: Session) {
   await flushSettings(session)
-  const entries = Object.entries(pending)
-  if (!entries.length) return
-  const rows = entries.map(([id, p]) => ({ user_id: session.user.id, id, data: p.task ?? {}, deleted: p.deleted }))
-  const { error } = await supabase.from('tasks').upsert(rows, { onConflict: 'user_id,id' })
-  if (error) throw error
-  // убираем из очереди только то, что не менялось, пока шёл запрос
-  const next = { ...pending }
-  for (const [id, p] of entries) if (next[id] === p) delete next[id]
-  pending = next
-  write(PENDING_KEY, pending)
-}
-
-async function pull() {
-  let since = read<string | null>(SINCE_KEY, null)
-  for (;;) {
-    let q = supabase.from('tasks').select('id, data, deleted, updated_at').order('updated_at').limit(500)
-    if (since) q = q.gt('updated_at', since)
-    const { data, error } = await q
-    if (error) throw error
-    if (!data.length) break
-    const fresh = data.filter((r) => !pending[r.id]) // локальные неотправленные правки важнее
-    applyRemote(
-      fresh.filter((r) => !r.deleted).map((r) => r.data as Task),
-      fresh.filter((r) => r.deleted).map((r) => r.id),
-    )
-    since = data[data.length - 1].updated_at
-    write(SINCE_KEY, JSON.stringify(since))
-    if (data.length < 500) break
-  }
+  for (const c of collections) await c.flush(session)
 }
 
 let running: Promise<void> | null = null
@@ -154,7 +187,7 @@ export function sync(): Promise<void> {
   running = (async () => {
     try {
       await flush(session)
-      await pull()
+      for (const c of collections) await c.pull()
       await pullSettings()
       if (settingsSync.dirty) await flushSettings(session)
       set({ status: 'synced', lastSync: Date.now() })
@@ -177,16 +210,12 @@ function onSession(session: Session | null) {
 
   const owner = read<string | null>(OWNER_KEY, null)
   if (owner !== session.user.id) {
-    if (owner) {
-      // на устройстве чужие данные (не должно случаться: при выходе чистим) — начинаем с чистого листа
-      clearLocal()
-      pending = {}
-    } else {
-      // первый вход: дела, созданные без аккаунта, переезжают в аккаунт
-      for (const task of getTasks()) pending[task.id] = { deleted: false, task }
+    for (const c of collections) {
+      // на устройстве чужие данные (не должно случаться: при выходе чистим) — начинаем с чистого листа;
+      // первый вход — созданное без аккаунта переезжает в аккаунт
+      if (owner) c.reset()
+      else c.adoptLocal()
     }
-    write(PENDING_KEY, pending)
-    write(SINCE_KEY, null)
     write(OWNER_KEY, JSON.stringify(session.user.id))
     if (owner) {
       resetCategories()
@@ -201,7 +230,8 @@ function onSession(session: Session | null) {
 
 export function initSync() {
   if (!supabaseConfigured) return
-  onLocalChange(enqueue)
+  onLocalChange((c) => tasksSync.enqueue(c.type === 'upsert' ? c.task.id : c.id, c.type === 'upsert' ? c.task : null))
+  onIncomeChange((c) => incomeSync.enqueue(c.type === 'upsert' ? c.item.id : c.id, c.type === 'upsert' ? c.item : null))
   const settingsChanged = () => {
     if (!st.session) return
     setSettingsSync({ dirty: true })
@@ -272,10 +302,7 @@ export async function signOut() {
     // не отправилось — всё равно выходим; правки без сети потеряются, предупреждаем в интерфейсе
   }
   await supabase.auth.signOut()
-  clearLocal()
-  pending = {}
-  write(PENDING_KEY, null)
-  write(SINCE_KEY, null)
+  for (const c of collections) c.reset()
   write(OWNER_KEY, null)
   write(SETTINGS_KEY, null)
   settingsSync = { dirty: false, merge: false }
@@ -285,7 +312,7 @@ export async function signOut() {
   set({ session: null, status: 'local', lastSync: null })
 }
 
-export const pendingCount = () => Object.keys(pending).length
+export const pendingCount = () => collections.reduce((n, c) => n + c.count(), 0)
 
 // «Пока без аккаунта» — помним выбор, чтобы не показывать экран входа каждый раз
 export const authSkipped = () => read<boolean>(SKIP_KEY, false)

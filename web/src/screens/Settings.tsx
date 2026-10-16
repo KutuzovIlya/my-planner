@@ -6,6 +6,7 @@ import { ChevronRight } from '../icons'
 import { getPrefs, REMIND_OPTIONS, setPrefs, usePrefs } from '../prefs'
 import { pushSupported, sendTestPush, subscribePush, unsubscribePush } from '../push'
 import { getTasks, useTasks } from '../store'
+import { getIncome } from '../money'
 import { supabaseConfigured } from '../supabase'
 import { useSync } from '../sync'
 
@@ -32,7 +33,7 @@ function notificationSupport(): { ok: boolean; hint?: string } {
 }
 
 function exportData() {
-  const data = { app: 'planner', version: 1, exportedAt: new Date().toISOString(), tasks: getTasks(), categories: getCategories(), prefs: getPrefs() }
+  const data = { app: 'planner', version: 1, exportedAt: new Date().toISOString(), tasks: getTasks(), income: getIncome(), categories: getCategories(), prefs: getPrefs() }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)

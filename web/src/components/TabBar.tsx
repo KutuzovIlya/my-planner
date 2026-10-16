@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react'
-import { Calendar, Clock, Gear, ListChecks } from '../icons'
+import { Calendar, Clock, Gear, ListChecks, Wallet } from '../icons'
 
-export type Tab = 'today' | 'week' | 'tasks' | 'settings'
+export type Tab = 'today' | 'week' | 'tasks' | 'money' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: () => ReactNode }[] = [
   { id: 'today', label: 'Сегодня', icon: () => <Clock /> },
   { id: 'week', label: 'Неделя', icon: () => <Calendar /> },
   { id: 'tasks', label: 'Задачи', icon: () => <ListChecks /> },
+  { id: 'money', label: 'Деньги', icon: () => <Wallet /> },
   { id: 'settings', label: 'Настройки', icon: () => <Gear /> },
 ]
 
