@@ -33,6 +33,8 @@ export interface Task {
   createdAt: number
   /** напоминание: за сколько минут; null — не напоминать; не задано — как в настройках */
   remind?: number | null
+  /** место среди дел без времени (меньше — выше); не задано — в конце, по порядку создания */
+  order?: number
 }
 
 export type TaskDraft = Omit<Task, 'id' | 'done' | 'doneDates' | 'createdAt'>
@@ -134,6 +136,24 @@ export function toggleDone(id: string, day: string) {
     const has = t.doneDates.includes(day)
     updateTask(id, { doneDates: has ? t.doneDates.filter((d) => d !== day) : [...t.doneDates, day] })
   }
+}
+
+/** Дела без времени в том порядке, в каком их расставили (стабильно для остальных) */
+export function byOrder(list: Task[]): Task[] {
+  const key = (t: Task) => t.order ?? Infinity
+  return [...list].sort((a, b) => (key(a) === key(b) ? 0 : key(a) - key(b)))
+}
+
+/** Переставить дело в списке на место index: всем делам списка проставляем order заново */
+export function reorderTasks(list: Task[], id: string, index: number) {
+  const from = list.findIndex((t) => t.id === id)
+  if (from < 0) return
+  const next = [...list]
+  const [moved] = next.splice(from, 1)
+  next.splice(from < index ? index - 1 : index, 0, moved)
+  next.forEach((t, i) => {
+    if (t.order !== i) updateTask(t.id, { order: i })
+  })
 }
 
 // ——— правила расписания ———

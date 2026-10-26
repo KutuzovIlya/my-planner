@@ -7,7 +7,7 @@ import { addDays, daysBetween, formatLong, formatTime, todayKey, WEEKDAYS, weekd
 import { Check, ChevronLeft, ChevronRight, Search, Plus, Repeat } from '../icons'
 import { catClass, categoryLabel } from '../categories'
 import { usePrefs } from '../prefs'
-import { isDoneOn, isOverdue, occursOn, toggleDone, updateTask, useTasks, type Task, type TaskDraft } from '../store'
+import { byOrder, isDoneOn, isOverdue, occursOn, reorderTasks, toggleDone, updateTask, useTasks, type Task, type TaskDraft } from '../store'
 
 const HOUR = 52
 
@@ -177,7 +177,7 @@ function TimelineEvent({ task: t, day, lane, lanes, y, scrollRef, onEdit }: {
   )
 }
 
-/** Чип дела без времени: тап — открыть, свайп — сделано, зажать — перетащить на сетку */
+/** Чип дела без времени: тап — открыть, свайп — сделано, зажать — перетащить на сетку или на другое место среди чипов */
 function UntimedChip({ task: t, day, overdue, dragging, onEdit, onDrag }: {
   task: Task
   day: string
@@ -190,7 +190,7 @@ function UntimedChip({ task: t, day, overdue, dragging, onEdit, onDrag }: {
   useLongPressDrag(ref, onDrag)
   const done = isDoneOn(t, day)
   return (
-    <div ref={ref} style={{ maxWidth: '100%', opacity: dragging ? 0.3 : 1 }}>
+    <div ref={ref} data-chip={t.id} style={{ maxWidth: '100%', opacity: dragging ? 0.3 : 1 }}>
       <Swipe onSwipe={() => toggleDone(t.id, day)} disabled={dragging} style={{ borderRadius: 16, maxWidth: '100%' }}>
         <div
           role="button"
@@ -232,10 +232,11 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
   const isToday = day === today
   const dayTasks = tasks.filter((t) => occursOn(t, day))
   const timed = dayTasks.filter((t) => t.start !== null)
-  const untimed = [
+  // порядок — как расставили перетаскиванием, сделанные — в конце
+  const untimed = byOrder([
     ...(isToday ? tasks.filter((t) => isOverdue(t, today)) : []),
     ...dayTasks.filter((t) => t.start === null),
-  ].sort((a, b) => Number(isDoneOn(a, day)) - Number(isDoneOn(b, day)))
+  ]).sort((a, b) => Number(isDoneOn(a, day)) - Number(isDoneOn(b, day)))
 
   const firstHour = Math.min(DAY_START, ...timed.map((t) => Math.floor(t.start! / 60)))
   const lastHour = Math.min(24, Math.max(DAY_END, ...timed.map((t) => Math.ceil((t.start! + t.duration) / 60))))
@@ -257,8 +258,22 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
     return Math.max(0, Math.min(23 * 60, Math.round(raw / SNAP) * SNAP))
   }
 
+  // ——— перестановка чипов между собой ———
+  const untimedRef = useRef<HTMLDivElement>(null)
+  const chipsRef = useRef<HTMLDivElement>(null)
+  /** где стояли чипы в начале перетаскивания (пока тащим, они не двигаются) */
+  const chipRects = useRef<DOMRect[]>([])
+
+  /** Место среди чипов под пальцем (0…n) или null, если палец не над ними */
+  const insertIndex = (clientY: number, clientX: number): number | null => {
+    const box = untimedRef.current?.getBoundingClientRect()
+    if (!box || clientY < box.top || clientY > box.bottom) return null
+    return chipRects.current.filter((r) => r.bottom < clientY || (clientY >= r.top && clientX > r.left + r.width / 2)).length
+  }
+
   const chipDragHandlers = (t: Task) => ({
     onStart: (y: number, x: number) => {
+      chipRects.current = [...(chipsRef.current?.querySelectorAll('[data-chip]') ?? [])].map((el) => el.getBoundingClientRect())
       chipPos.current = { x, y }
       setChipDrag({ task: t, x, y })
       // автопрокрутка сетки у краёв
@@ -282,10 +297,13 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
       chipPos.current = { x, y }
       setChipDrag({ task: t, x, y })
     },
-    onEnd: (y: number | null) => {
+    onEnd: (y: number | null, x: number) => {
       cancelAnimationFrame(chipRaf.current)
       const min = y === null ? null : dropMinutes(y)
-      if (min !== null) {
+      const at = y === null ? null : insertIndex(y, x)
+      if (at !== null) {
+        reorderTasks(untimed, t.id, at)
+      } else if (min !== null) {
         // по умолчанию — час; просроченное дело переезжает на этот день
         updateTask(t.id, { start: min, duration: 60, ...(t.repeat === 'none' ? { date: day } : {}) })
       }
@@ -293,6 +311,19 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
     },
   })
   const chipDrop = chipDrag ? dropMinutes(chipDrag.y) : null
+  const chipInsert = chipDrag ? insertIndex(chipDrag.y, chipDrag.x) : null
+  // полоска «встанет сюда»; не показываем, если дело остаётся на своём месте
+  let insertMark: { left: number; top: number; height: number } | null = null
+  const fromIndex = chipDrag ? untimed.findIndex((t) => t.id === chipDrag.task.id) : -1
+  const box = chipsRef.current?.getBoundingClientRect()
+  if (chipInsert !== null && box && chipInsert !== fromIndex && chipInsert !== fromIndex + 1) {
+    const rects = chipRects.current
+    const r = rects[Math.min(chipInsert, rects.length - 1)]
+    if (r) {
+      const left = chipInsert < rects.length ? r.left - 4 : r.right + 2
+      insertMark = { left: left - box.left, top: r.top - box.top, height: r.height }
+    }
+  }
 
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const showNow = isToday && nowMin >= firstHour * 60 && nowMin <= lastHour * 60
@@ -333,11 +364,11 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
         className={'pager-page' + (slide ? ' slide-' + slide : '')}
         style={pageStyle}
       >
-      <div className="untimed">
+      <div className="untimed" ref={untimedRef}>
         {untimed.length > 0 ? (
           <>
             <div className="untimed-label">Без времени · {untimed.length}</div>
-            <div className="chips">
+            <div className="chips" ref={chipsRef}>
               {untimed.map((t) => (
                 <UntimedChip
                   key={t.id}
@@ -349,6 +380,7 @@ export function Today({ day, onDayChange, onEdit, onNew, onSearch }: {
                   onDrag={chipDragHandlers(t)}
                 />
               ))}
+              {insertMark && <div className="chip-insert" style={insertMark} />}
             </div>
           </>
         ) : dayTasks.length === 0 ? (
