@@ -9,17 +9,26 @@ export function IncomeForm({ item, initialSource, initialDebtId, onClose }: { it
   const today = todayKey()
   const all = useIncome()
   const [amount, setAmount] = useState(item ? String(item.amount).replace('.', ',') : '')
-  const [source, setSource] = useState(item?.source ?? initialSource ?? '')
-  const [date, setDate] = useState(item?.date ?? today)
-  const [note, setNote] = useState(item?.note ?? '')
   const debts = useDebts()
-  const [debtId, setDebtId] = useState<string | undefined>(item?.debtId ?? initialDebtId)
-  const debt = debts.find((d) => d.id === debtId)
   // этот же возврат не считаем в уже отданном, чтобы видно было остаток после него
   const others = all.filter((i) => i.id !== item?.id)
+  /** должник с таким же именем, как источник, который ещё не всё вернул */
+  const matchDebt = (s: string) => debts.find((d) => d.name.trim().toLowerCase() === s.trim().toLowerCase() && leftOf(d, others) > 0)
+  const [source, setSource] = useState(item?.source ?? initialSource ?? '')
+  const [debtId, setDebtId] = useState<string | undefined>(item ? item.debtId : (initialDebtId ?? matchDebt(initialSource ?? '')?.id))
+  // сам выбрал или снял долг — больше не подставляем автоматически
+  const [debtTouched, setDebtTouched] = useState(!!item)
+  const changeSource = (s: string) => {
+    setSource(s)
+    if (!debtTouched) setDebtId(matchDebt(s)?.id)
+  }
+  const [date, setDate] = useState(item?.date ?? today)
+  const [note, setNote] = useState(item?.note ?? '')
+  const debt = debts.find((d) => d.id === debtId)
   const debtChoices = sortDebts(debts, others).filter((d) => d.id === debtId || leftOf(d, others) > 0)
 
   const pickDebt = (id: string) => {
+    setDebtTouched(true)
     if (id === debtId) {
       setDebtId(undefined)
       return
@@ -92,7 +101,7 @@ export function IncomeForm({ item, initialSource, initialDebtId, onClose }: { it
               <input
                 className="title-input"
                 value={source}
-                onChange={(e) => setSource(e.target.value)}
+                onChange={(e) => changeSource(e.target.value)}
                 placeholder="Зарплата, клиент, проект…"
                 aria-label="Источник"
                 enterKeyHint="done"
@@ -101,7 +110,7 @@ export function IncomeForm({ item, initialSource, initialDebtId, onClose }: { it
             {suggestions.length > 0 && (
               <div className="pills" style={{ justifyContent: 'flex-start' }}>
                 {suggestions.map((s) => (
-                  <button type="button" key={s} className={'pill' + (s === source.trim() ? ' on' : '')} onClick={() => setSource(s)}>
+                  <button type="button" key={s} className={'pill' + (s === source.trim() ? ' on' : '')} onClick={() => changeSource(s)}>
                     {s}
                   </button>
                 ))}

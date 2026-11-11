@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { addDays, formatRelative, todayKey } from '../dates'
+import { formatRelative, todayKey } from '../dates'
 import { addDebt, deleteDebt, leftOf, paidOf, paymentsOf, sortDebts, updateDebt, useDebts, type Debt } from '../debts'
-import { Calendar, Plus } from '../icons'
-import { formatMoney, parseAmount, updateIncome, useIncome, type Income } from '../money'
+import { Plus } from '../icons'
+import { formatMoney, parseAmount, sourcesByTotal, updateIncome, useIncome, type Income } from '../money'
 
 function useEscape(onClose: () => void) {
   useEffect(() => {
@@ -72,7 +72,7 @@ export function DebtsSheet({ onClose, onOpen, onNew }: { onClose: () => void; on
           {debts.length === 0 ? (
             <div className="empty">
               <b>Никто не должен</b>
-              Нажми «+», запиши, кто и сколько должен. Когда он вернёт часть — добавь поступление в «Деньгах» и отметь «в счёт долга».
+              Нажми «+», выбери, кто и сколько должен. Дальше каждое поступление от него в «Деньгах» само уменьшит долг.
             </div>
           ) : (
             <>
@@ -113,13 +113,19 @@ export function DebtForm({
   const income = useIncome()
   const [amount, setAmount] = useState(debt ? String(debt.amount).replace('.', ',') : '')
   const [name, setName] = useState(debt?.name ?? '')
-  const [date, setDate] = useState(debt?.date ?? today)
+  const date = debt?.date ?? today
   const [note, setNote] = useState(debt?.note ?? '')
 
+  const q = name.trim().toLowerCase()
+  // подсказки «кто» — те, от кого уже приходили деньги; только когда начал вводить
+  const suggestions = q
+    ? sourcesByTotal(income).filter((s) => s.toLowerCase().includes(q) && s.toLowerCase() !== q).slice(0, 6)
+    : []
+
   const value = parseAmount(amount)
-  const canSave = value !== null && name.trim().length > 0 && !!date
+  const canSave = value !== null && name.trim().length > 0
   const draft = () => ({ amount: value!, name: name.trim(), date, note: note.trim() })
-  const dirty = !!debt && canSave && (value !== debt.amount || name.trim() !== debt.name || date !== debt.date || note.trim() !== debt.note)
+  const dirty = !!debt && canSave && (value !== debt.amount || name.trim() !== debt.name || note.trim() !== debt.note)
 
   const save = () => {
     if (!canSave) return
@@ -200,7 +206,7 @@ export function DebtForm({
           )}
 
           <div className="section">
-            <div className="section-title">{debt ? 'Сколько был должен' : 'Сколько должен'}</div>
+            <div className="section-title">{debt ? 'Сколько был должен всего' : 'Сколько должен'}</div>
             <div className="field-card">
               <label className="amount-input">
                 <input
@@ -220,18 +226,15 @@ export function DebtForm({
           <div className="section">
             <div className="section-title">Кто</div>
             <div className="field-card">
-              <input className="title-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Имя" aria-label="Кто должен" enterKeyHint="done" />
+              <input className="title-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Начни вводить имя" aria-label="Кто должен" enterKeyHint="done" />
             </div>
-          </div>
-
-          <div className="section">
-            <div className="section-title">Когда дал в долг</div>
-            <div className="group">
-              <div className="form-row">
-                <span><Calendar size={19} /> Дата</span>
-                <input type="date" className="pill-input" value={date} max={addDays(today, 366)} onChange={(e) => setDate(e.target.value)} aria-label="Дата" />
+            {suggestions.length > 0 && (
+              <div className="pills" style={{ justifyContent: 'flex-start' }}>
+                {suggestions.map((s) => (
+                  <button type="button" key={s} className="pill" onClick={() => setName(s)}>{s}</button>
+                ))}
               </div>
-            </div>
+            )}
           </div>
 
           <div className="field-card">
