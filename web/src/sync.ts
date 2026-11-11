@@ -7,6 +7,7 @@ import { applyRemotePrefs, getPrefs, onPrefsChange, resetPrefs, type Prefs } fro
 import { applyRemote, clearLocal, getTasks, onLocalChange, type Task } from './store'
 import { applyRemoteIncome, clearLocalIncome, getIncome, onIncomeChange, type Income } from './money'
 import { applyRemoteDebts, clearLocalDebts, getDebts, onDebtChange, type Debt } from './debts'
+import { applyRemoteSavings, clearLocalSavings, getSavings, onSavingChange, type Saving } from './savings'
 
 // Синхронизация «сначала локально»: дела живут в localStorage и работают без сети,
 // изменения копятся в очереди и уходят на сервер; с сервера забираем только изменившееся.
@@ -117,7 +118,8 @@ function collection<T extends { id: string }>(
 const tasksSync = collection<Task>('tasks', 'planner.pending', 'planner.since', getTasks, applyRemote, clearLocal)
 const incomeSync = collection<Income>('income', 'planner.pending-income', 'planner.since-income', getIncome, applyRemoteIncome, clearLocalIncome)
 const debtsSync = collection<Debt>('debts', 'planner.pending-debts', 'planner.since-debts', getDebts, applyRemoteDebts, clearLocalDebts)
-const collections = [tasksSync, incomeSync, debtsSync]
+const savingsSync = collection<Saving>('savings', 'planner.pending-savings', 'planner.since-savings', getSavings, applyRemoteSavings, clearLocalSavings)
+const collections = [tasksSync, incomeSync, debtsSync, savingsSync]
 
 // категории: dirty — есть неотправленные правки; merge — первый вход, объединить с облаком
 let settingsSync: { dirty: boolean; merge: boolean } = read(SETTINGS_KEY, { dirty: false, merge: false })
@@ -235,6 +237,7 @@ export function initSync() {
   onLocalChange((c) => tasksSync.enqueue(c.type === 'upsert' ? c.task.id : c.id, c.type === 'upsert' ? c.task : null))
   onIncomeChange((c) => incomeSync.enqueue(c.type === 'upsert' ? c.item.id : c.id, c.type === 'upsert' ? c.item : null))
   onDebtChange((c) => debtsSync.enqueue(c.type === 'upsert' ? c.item.id : c.id, c.type === 'upsert' ? c.item : null))
+  onSavingChange((c) => savingsSync.enqueue(c.type === 'upsert' ? c.item.id : c.id, c.type === 'upsert' ? c.item : null))
   const settingsChanged = () => {
     if (!st.session) return
     setSettingsSync({ dirty: true })

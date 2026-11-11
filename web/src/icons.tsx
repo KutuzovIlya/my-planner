@@ -47,6 +47,9 @@ export const Gear = ({ size = 24 }: P) => (
 export const Bell = ({ size = 19 }: P) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8" /><path d="M10.5 21a2 2 0 0 0 3 0" /></svg>
 )
+export const Piggy = ({ size = 24 }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M19 9.5c1 .6 1.6 1.4 1.8 2.5H22v3h-1.6a6 6 0 0 1-2.4 2.3V20h-3v-1.6a8 8 0 0 1-4 0V20H8v-2.6A5.8 5.8 0 0 1 5 12.5C5 9 8.1 6.5 12 6.5c1.2 0 2.3.2 3.3.6L18 5.5v4z" /><path d="M2.5 11.5c0 1.2.9 2 2.5 2" /><circle cx="16" cy="11" r=".6" fill="currentColor" /><path d="M10 9h3" /></svg>
+)
 export const Wallet = ({ size = 24 }: P) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3v-4" /><path d="M3 6v12a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-2" /></svg>
 )

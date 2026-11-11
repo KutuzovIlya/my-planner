@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { addDays, daysBetween, formatDay, formatRange, formatRelative, todayKey } from '../dates'
 import { leftOf, useDebts } from '../debts'
-import { ChevronLeft, ChevronRight, Person, Plus } from '../icons'
+import { ChevronLeft, ChevronRight, Person, Piggy, Plus } from '../icons'
 import { formatMoney, sourceColor, sourcesByTotal, sum, useIncome, type Income } from '../money'
 
 type Mode = 'month' | 'year' | 'range' | 'all'
@@ -169,7 +169,7 @@ function Chart({ data, onPick }: { data: Bar[]; onPick: (p: Period) => void }) {
   )
 }
 
-export function Money({ onNew, onEdit, onDebts }: { onNew: (source?: string) => void; onEdit: (i: Income) => void; onDebts: () => void }) {
+export function Money({ onNew, onEdit, onDebts, onPiggy }: { onNew: (source?: string) => void; onEdit: (i: Income) => void; onDebts: () => void; onPiggy: () => void }) {
   const all = useIncome()
   const debts = useDebts()
   const activeDebts = debts.filter((d) => leftOf(d, all) > 0)
@@ -220,6 +220,7 @@ export function Money({ onNew, onEdit, onDebts }: { onNew: (source?: string) => 
         <div className="header-row">
           <div className="title">Деньги</div>
           <div className="header-actions">
+            <button className="icon-btn" onClick={onPiggy} aria-label="Копилка"><Piggy /></button>
             <button className="icon-btn" onClick={onDebts} aria-label="Должники"><Person /></button>
             <button className="icon-btn" onClick={() => onNew(source ?? undefined)} aria-label="Добавить заработок"><Plus /></button>
           </div>
