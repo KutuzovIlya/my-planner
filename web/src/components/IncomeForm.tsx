@@ -47,7 +47,11 @@ export function IncomeForm({ item, initialSource, initialDebtId, onClose }: { it
 
   const value = parseAmount(amount)
   const canSave = value !== null && source.trim().length > 0 && !!date
-  const suggestions = sourcesByTotal(all).slice(0, 8)
+  // подсказки «откуда»: кто уже платил и должники (даже если от них ещё ничего не приходило);
+  // пока поле пустое — самые крупные источники, при вводе — все, в ком есть набранное
+  const q = source.trim().toLowerCase()
+  const known = [...new Set([...sourcesByTotal(all), ...debts.map((d) => d.name.trim())])]
+  const suggestions = q ? known.filter((s) => s.toLowerCase().includes(q)).slice(0, 8) : sourcesByTotal(all).slice(0, 8)
 
   const save = () => {
     if (!canSave) return
