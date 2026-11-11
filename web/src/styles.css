@@ -587,3 +587,18 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .money-range { display: flex; gap: 8px; margin-top: 8px; }
 .money-range label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--label-2); }
 .money-range input { flex: 1; min-width: 0; width: 100%; }
+
+/* ——— должники ——— */
+.header-actions { display: flex; gap: 0; }
+.debt-strip {
+  display: flex; align-items: center; gap: 8px; width: calc(100% - 32px); margin: 14px 16px -4px;
+  background: var(--card); border-radius: 12px; padding: 10px 8px 10px 14px; min-height: 44px;
+  font-size: 15px; color: var(--label-2); text-align: left;
+}
+.debt-strip b { color: var(--label); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.debt-strip-count { flex: 1; min-width: 0; text-align: right; color: var(--label-3); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.debt-strip svg { color: var(--label-4); flex-shrink: 0; }
+.debt-bar span { background: var(--green); }
+.debt-progress { width: 100%; padding: 4px 16px 0; }
+.debt-progress .debt-bar { display: block; height: 8px; border-radius: 4px; }
+.debt-pay { display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; }

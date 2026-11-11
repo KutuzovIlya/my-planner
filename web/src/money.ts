@@ -12,6 +12,8 @@ export interface Income {
   /** в рублях */
   amount: number
   note: string
+  /** возврат долга: id должника из debts.ts */
+  debtId?: string
   createdAt: number
 }
 

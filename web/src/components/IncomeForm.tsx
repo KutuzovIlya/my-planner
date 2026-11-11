@@ -1,16 +1,34 @@
 import { useEffect, useState } from 'react'
 import { addDays, todayKey } from '../dates'
 import { Calendar } from '../icons'
+import { leftOf, sortDebts, useDebts } from '../debts'
 import { addIncome, deleteIncome, formatMoney, parseAmount, sourcesByTotal, updateIncome, useIncome, type Income } from '../money'
 
 /** Шторка «Новый заработок» / «Заработок» */
-export function IncomeForm({ item, initialSource, onClose }: { item?: Income; initialSource?: string; onClose: () => void }) {
+export function IncomeForm({ item, initialSource, initialDebtId, onClose }: { item?: Income; initialSource?: string; initialDebtId?: string; onClose: () => void }) {
   const today = todayKey()
   const all = useIncome()
   const [amount, setAmount] = useState(item ? String(item.amount).replace('.', ',') : '')
   const [source, setSource] = useState(item?.source ?? initialSource ?? '')
   const [date, setDate] = useState(item?.date ?? today)
   const [note, setNote] = useState(item?.note ?? '')
+  const debts = useDebts()
+  const [debtId, setDebtId] = useState<string | undefined>(item?.debtId ?? initialDebtId)
+  const debt = debts.find((d) => d.id === debtId)
+  // этот же возврат не считаем в уже отданном, чтобы видно было остаток после него
+  const others = all.filter((i) => i.id !== item?.id)
+  const debtChoices = sortDebts(debts, others).filter((d) => d.id === debtId || leftOf(d, others) > 0)
+
+  const pickDebt = (id: string) => {
+    if (id === debtId) {
+      setDebtId(undefined)
+      return
+    }
+    const d = debts.find((x) => x.id === id)
+    // источник подставляем по имени должника, если он пустой или от прошлого выбора
+    if (d && (!source.trim() || source.trim() === debt?.name)) setSource(d.name)
+    setDebtId(id)
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -24,7 +42,7 @@ export function IncomeForm({ item, initialSource, onClose }: { item?: Income; in
 
   const save = () => {
     if (!canSave) return
-    const draft = { amount: value, source: source.trim(), date, note: note.trim() }
+    const draft = { amount: value, source: source.trim(), date, note: note.trim(), debtId: debt?.id }
     if (item) updateIncome(item.id, draft)
     else addIncome(draft)
     onClose()
@@ -90,6 +108,27 @@ export function IncomeForm({ item, initialSource, onClose }: { item?: Income; in
               </div>
             )}
           </div>
+
+          {debtChoices.length > 0 && (
+            <div className="section">
+              <div className="section-title">В счёт долга</div>
+              <div className="pills" style={{ justifyContent: 'flex-start' }}>
+                {debtChoices.map((d) => (
+                  <button type="button" key={d.id} className={'pill' + (d.id === debtId ? ' on' : '')} onClick={() => pickDebt(d.id)}>
+                    {d.name}
+                  </button>
+                ))}
+              </div>
+              {debt && (
+                <div className="hint" style={{ paddingLeft: 4 }}>
+                  {(() => {
+                    const left = Math.max(0, Math.round((leftOf(debt, others) - (value ?? 0)) * 100) / 100)
+                    return left ? `После этого останется ${formatMoney(left)} из ${formatMoney(debt.amount)}` : `Долг ${formatMoney(debt.amount)} будет закрыт`
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="section">
             <div className="section-title">Когда</div>

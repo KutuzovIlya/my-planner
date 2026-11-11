@@ -4,6 +4,7 @@ import { AccountSheet } from './components/AccountSheet'
 import { AuthForm } from './components/AuthForm'
 import { AuthScreen } from './components/AuthScreen'
 import { IncomeForm } from './components/IncomeForm'
+import { DebtForm, DebtsSheet } from './components/Debts'
 import { SearchSheet } from './components/SearchSheet'
 import { TaskForm } from './components/TaskForm'
 import { todayKey } from './dates'
@@ -15,10 +16,14 @@ import { Week } from './screens/Week'
 import { useCategories } from './categories'
 import { useTasks, type TaskDraft } from './store'
 import { useIncome } from './money'
+import { useDebts } from './debts'
 import { supabaseConfigured } from './supabase'
 import { authSkipped, useSync } from './sync'
 
-type Sheet = { kind: 'account' } | { kind: 'search' } | { kind: 'new'; initial?: Partial<TaskDraft> } | { kind: 'edit'; id: string; day?: string } | { kind: 'income'; id?: string; source?: string } | null
+type Sheet = { kind: 'account' } | { kind: 'search' } | { kind: 'new'; initial?: Partial<TaskDraft> } | { kind: 'edit'; id: string; day?: string } | { kind: 'income'; id?: string; source?: string; debtId?: string; back?: Sheet }
+  | { kind: 'debts' }
+  | { kind: 'debt'; id?: string }
+  | null
 
 const tabFromHash = (): Tab => {
   const h = location.hash.slice(1)
@@ -31,6 +36,7 @@ export function App() {
   const [sheet, setSheet] = useState<Sheet>(null)
   const tasks = useTasks()
   const income = useIncome()
+  const debts = useDebts()
   const auth = useSync()
   useCategories() // перерисовать всё при переименовании/перекраске категории
   const [skipped, setSkipped] = useState(authSkipped)
@@ -85,7 +91,7 @@ export function App() {
         <Tasks onEdit={(t) => setSheet({ kind: 'edit', id: t.id })} onNew={() => setSheet({ kind: 'new' })} />
       )}
       {tab === 'money' && (
-        <Money onNew={(source) => setSheet({ kind: 'income', source })} onEdit={(i) => setSheet({ kind: 'income', id: i.id })} />
+        <Money onNew={(source) => setSheet({ kind: 'income', source })} onEdit={(i) => setSheet({ kind: 'income', id: i.id })} onDebts={() => setSheet({ kind: 'debts' })} />
       )}
       {tab === 'settings' && <Settings onAccount={() => setSheet({ kind: 'account' })} />}
       <TabBar tab={tab} onChange={changeTab} />
@@ -112,7 +118,25 @@ export function App() {
       )}
       {sheet?.kind === 'new' && <TaskForm initial={sheet.initial} onClose={close} />}
       {sheet?.kind === 'income' && (
-        <IncomeForm key={sheet.id ?? 'new'} item={sheet.id ? income.find((i) => i.id === sheet.id) : undefined} initialSource={sheet.source} onClose={close} />
+        <IncomeForm
+          key={sheet.id ?? 'new'}
+          item={sheet.id ? income.find((i) => i.id === sheet.id) : undefined}
+          initialSource={sheet.source}
+          initialDebtId={sheet.debtId}
+          onClose={() => setSheet(sheet.back ?? null)}
+        />
+      )}
+      {sheet?.kind === 'debts' && (
+        <DebtsSheet onClose={close} onOpen={(d) => setSheet({ kind: 'debt', id: d.id })} onNew={() => setSheet({ kind: 'debt' })} />
+      )}
+      {sheet?.kind === 'debt' && (
+        <DebtForm
+          key={sheet.id ?? 'new'}
+          debt={sheet.id ? debts.find((d) => d.id === sheet.id) : undefined}
+          onClose={() => setSheet({ kind: 'debts' })}
+          onPayment={(d) => setSheet({ kind: 'income', source: d.name, debtId: d.id, back: { kind: 'debt', id: d.id } })}
+          onEditPayment={(i) => setSheet({ kind: 'income', id: i.id, back: sheet })}
+        />
       )}
       {editing && sheet?.kind === 'edit' && <TaskForm key={editing.id} task={editing} day={sheet.day} onClose={close} />}
     </div>

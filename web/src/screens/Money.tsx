@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { addDays, daysBetween, formatDay, formatRange, formatRelative, todayKey } from '../dates'
-import { ChevronLeft, ChevronRight, Plus } from '../icons'
+import { leftOf, useDebts } from '../debts'
+import { ChevronLeft, ChevronRight, Person, Plus } from '../icons'
 import { formatMoney, sourceColor, sourcesByTotal, sum, useIncome, type Income } from '../money'
 
 type Mode = 'month' | 'year' | 'range' | 'all'
@@ -168,8 +169,12 @@ function Chart({ data, onPick }: { data: Bar[]; onPick: (p: Period) => void }) {
   )
 }
 
-export function Money({ onNew, onEdit }: { onNew: (source?: string) => void; onEdit: (i: Income) => void }) {
+export function Money({ onNew, onEdit, onDebts }: { onNew: (source?: string) => void; onEdit: (i: Income) => void; onDebts: () => void }) {
   const all = useIncome()
+  const debts = useDebts()
+  const activeDebts = debts.filter((d) => leftOf(d, all) > 0)
+  const owed = Math.round(activeDebts.reduce((s, d) => s + leftOf(d, all), 0) * 100) / 100
+  const debtName = new Map(debts.map((d) => [d.id, d.name]))
   const now = new Date()
   const today = todayKey()
   const [period, setPeriod] = useState<Period>({ mode: 'month', year: now.getFullYear(), month: now.getMonth(), from: today.slice(0, 8) + '01', to: today })
@@ -214,7 +219,10 @@ export function Money({ onNew, onEdit }: { onNew: (source?: string) => void; onE
       <header className="header">
         <div className="header-row">
           <div className="title">Деньги</div>
-          <button className="icon-btn" onClick={() => onNew(source ?? undefined)} aria-label="Добавить заработок"><Plus /></button>
+          <div className="header-actions">
+            <button className="icon-btn" onClick={onDebts} aria-label="Должники"><Person /></button>
+            <button className="icon-btn" onClick={() => onNew(source ?? undefined)} aria-label="Добавить заработок"><Plus /></button>
+          </div>
         </div>
         <div className="segmented">
           {(['month', 'year', 'range', 'all'] as Mode[]).map((m) => (
@@ -238,6 +246,14 @@ export function Money({ onNew, onEdit }: { onNew: (source?: string) => void; onE
       </header>
 
       <div className="scroll">
+        {activeDebts.length > 0 && (
+          <button className="debt-strip" onClick={onDebts}>
+            <span>Тебе должны</span>
+            <b>{formatMoney(owed)}</b>
+            <span className="debt-strip-count">{activeDebts.length === 1 ? activeDebts[0].name : `${activeDebts.length} чел.`}</span>
+            <ChevronRight size={18} />
+          </button>
+        )}
         {all.length === 0 ? (
           <div className="empty">
             <b>Здесь будет твой заработок</b>
@@ -314,7 +330,7 @@ export function Money({ onNew, onEdit }: { onNew: (source?: string) => void; onE
                       <span className="dot" style={{ width: 8, height: 8 }} />
                       <span className="row-body">
                         <span className="row-title">{i.source}</span>
-                        <span className="row-meta">{dayLabel(i.date)}{i.note ? ` · ${i.note}` : ''}</span>
+                        <span className="row-meta">{dayLabel(i.date)}{i.debtId && debtName.has(i.debtId) ? ' · возврат долга' : ''}{i.note ? ` · ${i.note}` : ''}</span>
                       </span>
                       <span className="money-amount">{formatMoney(i.amount)}</span>
                     </button>
